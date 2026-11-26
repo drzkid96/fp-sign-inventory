@@ -1,16 +1,8 @@
-import json, urllib.request, collections
-UA={'User-Agent':'fp-sign-inventory/1.0'}
-def get(u):
+import json, urllib.request, urllib.parse
+b='34.0197,-118.3995,34.0253,-118.3925'
+q=f'[out:json][timeout:120];(way["highway"~"^(motorway|trunk|primary|secondary|tertiary|residential|unclassified|living_street|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link|service)$"]({b});node["highway"~"^(stop|give_way|traffic_signals)$"]({b}););out geom;'
+for u in ('https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter','https://maps.mail.ru/osm/tools/overpass/api/interpreter'):
     try:
-        r=urllib.request.urlopen(urllib.request.Request(u,headers=UA),timeout=60); return r.status, r.read()
-    except Exception as e: return str(e)[:120], b''
-areas={'hds':(34.0828,-118.1857,900),'culver':(34.0225,-118.3960,450)}
-for k,(la,lo,rad) in areas.items():
-    for u in [f'https://api.openstreetcam.org/2.0/photo/?lat={la}&lng={lo}&radius={rad}&itemsPerPage=1000',
-              f'https://api.openstreetcam.org/2.0/sequence/?lat={la}&lng={lo}&radius={rad}&itemsPerPage=100']:
-        st,b=get(u)
-        try:
-            d=json.loads(b); r=d.get('result',{}).get('data',[])
-            yrs=collections.Counter(str(x.get('shotDate') or x.get('dateAdded') or '')[:4] for x in r)
-            print(k,u.split('?')[0].split('/')[-2],st,len(r),dict(yrs),json.dumps(r[0])[:600] if r else '')
-        except Exception as e: print(k,u,st,str(e)[:100],b[:200])
+        r=urllib.request.urlopen(urllib.request.Request(u,data=urllib.parse.urlencode({'data':q}).encode(),headers={'User-Agent':'fp-sign-inventory/1.0'}),timeout=200)
+        open('probes/osm_culver.json','wb').write(r.read()); print('ok',u); break
+    except Exception as e: print(u,e)
