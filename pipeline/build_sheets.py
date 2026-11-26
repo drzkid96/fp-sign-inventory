@@ -14,22 +14,23 @@ for n,f in [('AS','Regular'),('ASM','Medium'),('ASS','SemiBold'),('ASB','Bold')]
 SLATE=(0,0x24/255,0x2E/255);EMER=(0,0x57/255,0x4A/255);JADE=(0x1B/255,0x79/255,0x5A/255);ORG=(1,0x66/255,0x22/255);CREAM=(0xEE/255,0xED/255,0xE8/255);BAND=(0xF2/255,)*3
 lib=json.load(open(REPO+'/data/library.json'));SPR=REPO+'/data/sprites/'
 NC={'NC-PARK':'Parking sign (no standard code)','NC-WARN':'Warning sign (no standard code)','NC-ID':'Community ID sign (no standard code)'}
-O=json.load(open('osm.json'))['elements'];G=json.load(open('frames.json'));F=G['frames'];cl=np.array(G['cl'])
+O=json.load(open('osm.json'))['elements'];G=json.load(open('frames.json'));F=G['frames'];cl=np.array(G['cl']).reshape(-1,2)
 S=[s for s in json.load(open('signs3.json')) if s['code'] not in('STREET','GUIDE','X')]
 A=json.load(open('all_images.json'))
-# station along centerline, sheet assignment, ids
-seg=np.r_[0,np.cumsum(np.linalg.norm(np.diff(cl,axis=0),axis=1))]
-T=cKDTree(cl)
+# sheet assignment: the sheet whose map contains the sign (closest to its center), ids in sheet order
+def inside(f,x,y):
+    d=np.array([x,y])-np.array(f['c']); u=np.array([math.cos(f['ang']),math.sin(f['ang'])]); n=np.array([-u[1],u[0]])
+    return max(abs(d@u)/(f['W']/2),abs(d@n)/(f['H']/2))
 for s in S:
-    _,k=T.query([s['x'],s['y']]); s['sta']=float(seg[k])
-S.sort(key=lambda s:(s['sta'],s['y']))
+    best=min(F,key=lambda f:inside(f,s['x'],s['y'])); s['sheet']=best['i']
+    d=np.array([s['x'],s['y']])-np.array(best['c']); u=np.array([math.cos(best['ang']),math.sin(best['ang'])]); s['sta']=float(d@u)
+S.sort(key=lambda s:(s['sheet'],s['sta'],-s['y']))
 for i,s in enumerate(S): s['id']=f'S-{i+1:03d}'
-for s in S:
-    best=min(F,key=lambda f:abs(s['sta']-(f['s0']+f['s1'])/2)); s['sheet']=best['i']
 F=[f for f in F if any(s['sheet']==f['i'] for s in S)]
 for k,f in enumerate(F): f['n']=k+1
 def face_img(code):
     if code=='R2-1/35': return 'r2-1-35.png'
+    if code=='R2-1': return SPR+'r2-1.webp'
     if code in NC: return None
     return SPR+lib[code]['s']+'.webp'
 # R2-1 35 face
@@ -41,7 +42,7 @@ def ir(path):
     if path not in IMGC:
         im=Image.open(path).convert('RGBA'); bg=Image.new('RGBA',im.size,(255,255,255,0)); IMGC[path]=ImageReader(im)
     return IMGC[path]
-def name(code): return NC.get(code) or lib.get(code.split('/')[0],{}).get('n','') or code
+def name(code): return NC.get(code) or ('Speed Limit' if code=='R2-1' else None) or lib.get(code.split('/')[0],{}).get('n','') or code
 def disp(code): return 'R2-1 (35)' if code=='R2-1/35' else ('NO CODE' if code in NC else code)
 # coverage (photos within 12 m)
 Iall=cKDTree([xy(*a['computed_geometry']['coordinates']) for a in A])
@@ -99,7 +100,6 @@ for fr in F:
     for s in sh: poles.append(P(s['x'],s['y']))
     for (px,py) in poles: occ.append((px-0.05,py-0.05,px+0.05,py+0.05))
     BW,BH=0.80,0.27
-    clp=P(*cl[np.argmin(np.linalg.norm(cl-np.array(fr['c']),axis=1))])
     for s,(px,py) in sorted(zip(sh,poles),key=lambda t:t[1][0]):
         side=1 if py>=MAPH/2+(0) else -1
         cands=[]
@@ -173,7 +173,7 @@ for fr in F:
     # key map
     kx,ky,kw,kh=4.2,0.35,4.6,1.35
     c.setStrokeColorRGB(*CREAM);c.setLineWidth(0.8);c.rect(kx*inch,ky*inch,kw*inch,kh*inch)
-    allp=np.vstack([cl]+[np.array([[f['c'][0],f['c'][1]]]) for f in F]); x0,y0=allp.min(0)-120; x1,y1=allp.max(0)+120
+    allp=np.vstack(([cl] if len(cl) else [])+[np.array([[f['c'][0]+sx*f['W']/2,f['c'][1]+sy*f['H']/2] for sx in(-1,1) for sy in(-1,1)]) for f in F]); x0,y0=allp.min(0)-60; x1,y1=allp.max(0)+60
     sc=min(kw/(x1-x0),kh/(y1-y0)); ox=kx+(kw-(x1-x0)*sc)/2; oy=ky+(kh-(y1-y0)*sc)/2
     K_=lambda x,y:((ox+(x-x0)*sc)*inch,(oy+(y-y0)*sc)*inch)
     c.saveState(); kp=c.beginPath(); kp.rect(kx*inch,ky*inch,kw*inch,kh*inch); c.clipPath(kp,stroke=0)
@@ -190,6 +190,7 @@ for fr in F:
         pth.close(); cur=f['i']==fr['i']
         c.setStrokeColorRGB(*(ORG if cur else SLATE));c.setLineWidth(1.4 if cur else 0.5)
         if cur: c.setFillColorRGB(*ORG);c.setFillAlpha(0.15)
+        if len(F)==1 and not len(cl): pass
         c.drawPath(pth,stroke=1,fill=1 if cur else 0);c.setFillAlpha(1)
     c.setStrokeColorRGB(*SLATE);c.setLineWidth(1.4)
     for a,b in zip(cl[:-1],cl[1:]): c.line(*K_(*a),*K_(*b))

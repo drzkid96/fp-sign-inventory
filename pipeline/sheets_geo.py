@@ -66,3 +66,14 @@ def render(fr,dpi=150,z=19):
     if len(TILEFAIL)>0.1*len(keys): raise SystemExit(f'aerial tiles failed ({len(TILEFAIL)} of {len(keys)}); rerun later')
     out=cv2.remap(mos,(mx-tx0*256).astype(np.float32),(my-ty0*256).astype(np.float32),cv2.INTER_LINEAR)
     return out
+def frames_grid(S,bbox):
+    # north-up sheets on a grid over the signs, for a neighborhood with no single corridor
+    W=MAPW*SCALE*FT; H=MAPH*SCALE*FT; P=np.array([[s['x'],s['y']] for s in S]) if S else np.zeros((1,2))
+    x0,y0=P.min(0)-15; x1,y1=P.max(0)+15; nx=max(1,int(math.ceil((x1-x0)/(W-20)))); ny=max(1,int(math.ceil((y1-y0)/(H-20))))
+    ox=(x0+x1)/2-(nx*(W-20))/2; oy=(y0+y1)/2-(ny*(H-20))/2; out=[]
+    for j in reversed(range(ny)):
+        for i in range(nx):
+            c=[ox+(i+0.5)*(W-20),oy+(j+0.5)*(H-20)]
+            if any(abs(p[0]-c[0])<=(W-20)/2+0.01 and abs(p[1]-c[1])<=(H-20)/2+0.01 for p in P):
+                out.append(dict(i=len(out),c=c,ang=0.0,W=W,H=H,s0=0,s1=0))
+    return out

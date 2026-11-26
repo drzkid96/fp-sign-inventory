@@ -36,6 +36,16 @@ def get(url, **p):
     return None
 
 # 1. photos in the area
+def quarter(b):
+    mx, my = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+    return [[b[0], b[1], mx, my], [mx, b[1], b[2], my], [b[0], my, mx, b[3]], [mx, my, b[2], b[3]]]
+def cell(bx):
+    r = get('https://graph.mapillary.com/images', access_token=TOKEN, bbox=','.join(f'{v:.6f}' for v in bx), limit=2000,
+            fields='id,captured_at,computed_geometry,computed_compass_angle,is_pano,width,height,camera_parameters,thumb_original_url,thumb_2048_url')
+    if r is None: raise SystemExit(f'photo list failed for part of the area {bx}; nothing was written')
+    data = [d for d in r.json().get('data', []) if d.get('computed_geometry') and d.get('computed_compass_angle') is not None]
+    if len(r.json().get('data', [])) >= 2000 and bx[2] - bx[0] > 0.0004: return [d for q in quarter(bx) for d in cell(q)]
+    return data
 def images():
     if os.path.exists('all_images.json'): return json.load(open('all_images.json'))
     out = {}; n = max(1, int(max(BBOX[2] - BBOX[0], BBOX[3] - BBOX[1]) / 0.003))
@@ -46,7 +56,10 @@ def images():
                     fields='id,captured_at,computed_geometry,computed_compass_angle,is_pano,width,height,camera_parameters,thumb_original_url,thumb_2048_url')
             if r is None: raise SystemExit(f'photo list failed for part of the area {bx}; nothing was written')
             data = r.json().get('data', [])
-            if len(data) >= 2000: raise SystemExit('too many photos in one cell; use a smaller area')
+            if len(data) >= 2000:
+                for sub in quarter(bx):
+                    for d in cell(sub): out[d['id']] = d
+                continue
             for d in data:
                 if d.get('computed_geometry') and d.get('computed_compass_angle') is not None: out[d['id']] = d
     A = list(out.values()); json.dump(A, open('all_images.json', 'w')); return A
@@ -264,10 +277,16 @@ if __name__ == '__main__':
     S = group(R, P, CL); log('signs', len(S))
     O = osm(); S = approach(S, O); cov = coverage(A, O); log('street length with photos', cov, '%')
     json.dump(S, open('signs3.json', 'w'))
+    if not REQ.get('speed_35'):  # the model knows the 35 mph face only; elsewhere report the code without a value
+        for s in S:
+            if s['code'] == 'R2-1/35': s['code'] = 'R2-1'
     corridor = REQ.get('corridor') or collections.Counter(s['street'] for s in S if s['code'] not in ('STREET', 'GUIDE')).most_common(1)[0][0]
     full = next((w['tags']['name'] for w in O if w['type'] == 'way' and short(w['tags'].get('name', '')) == corridor), corridor)
     sys.path.insert(0, HERE); import sheets_geo; sheets_geo.setup(BBOX)
-    cl = sheets_geo.centerline(O, full); F = sheets_geo.frames(cl, S)
+    if REQ.get('layout') == 'grid':
+        cl = np.zeros((0, 2)); F = sheets_geo.frames_grid([s for s in S if s['code'] not in ('STREET', 'GUIDE', 'X')], BBOX)
+    else:
+        cl = sheets_geo.centerline(O, full); F = sheets_geo.frames(cl, S)
     json.dump({'cl': cl.tolist(), 'frames': F}, open('frames.json', 'w'))
     date = datetime.date.today().isoformat()
     os.makedirs(os.path.join(REPO, 'data', 'areas', KEY, 'crops'), exist_ok=True)
@@ -278,7 +297,7 @@ if __name__ == '__main__':
     site = []
     for s in Sf:
         c = cv2.imread(f"dc/{s['best']}.jpg"); cv2.imwrite(os.path.join(REPO, 'data', 'areas', KEY, 'crops', s['id'] + '.jpg'), c, [cv2.IMWRITE_JPEG_QUALITY, 85])
-        code = 'R2-1' if s['code'] == 'R2-1/35' else ('' if s['code'].startswith('NC-') else s['code'])
+        code = 'R2-1' if s['code'] in ('R2-1/35', 'R2-1') else ('' if s['code'].startswith('NC-') else s['code'])
         site.append(dict(id=s['id'], lat=s['lat'], lon=s['lon'], code=code, val='35' if s['code'] == 'R2-1/35' else '',
                          status='verified' if s['conf'] >= HIGH else 'review', conf=s['conf'], dir=round(s['face']), loc=s['loc'],
                          seen=str(max(s['years'])), years=s['years'], views=s['nviews'], img=s['best_img'], crop=s['id'] + '.jpg',
