@@ -111,7 +111,7 @@ let lastZ = null;
 map.on('zoomend', () => { if (signs.length && map.getZoom() !== lastZ) { lastZ = map.getZoom(); draw(); } });
 function popup(s) {
   const L0 = LIB[s.code];
-  const crop = s.crop ? `<img class="crop" src="data/verified/crops/${s.crop}" alt="">` : `<div class="crop" id="crop-${s.id}" style="height:150px"></div>`;
+  const crop = s.crop ? `<img class="crop" src="data/verified/crops/${s.crop}" alt="">` : `<div class="crop" id="crop-${s.id}"></div>`;
   return `<div class="pop">
     <div class="row">${L0 ? `<img class="ref" src="${sprite(s.code)}" alt="">` : ''}
       <div><h3>${esc(s.code || STATUS_TXT[s.status])}</h3><div class="nm">${esc(L0 ? L0.n : (s.cls || ''))}</div></div></div>
@@ -122,7 +122,7 @@ function popup(s) {
       ${s.val ? `<tr><td>VALUE</td><td>${esc(s.val)}</td></tr>` : ''}
       ${s.plaque ? `<tr><td>PLAQUE</td><td>${esc(s.plaque)}</td></tr>` : ''}
       ${s.arrow ? `<tr><td>ARROW</td><td>${esc(s.arrow)}</td></tr>` : ''}
-      ${s.seen ? `<tr><td>PHOTO</td><td>${esc(s.seen)}</td></tr>` : ''}
+      ${s.seen ? `<tr><td>PHOTO</td><td>${esc(s.seen)}${(Date.now() - Date.parse(s.seen)) > 3*365.25*864e5 ? ' <span class="old">OVER 3 YEARS OLD</span>' : ''}</td></tr>` : ''}
     </table>
     <div class="links"><a href="${mly(s)}" target="_blank" rel="noopener">PHOTO</a><a href="${sv(s)}" target="_blank" rel="noopener">STREET VIEW</a></div>
   </div>`;
@@ -140,9 +140,9 @@ async function liveCrop(s) {
     const cx = (x0+x1)/2, cy = (y0+y1)/2, span = Math.max(w,h) + 2*pad;
     const img = new Image();
     img.onload = () => {
-      const W = el.clientWidth, H = 150, iw = img.naturalWidth, ih = img.naturalHeight;
+      const W = el.clientWidth, H = 170, iw = img.naturalWidth, ih = img.naturalHeight;
       const k = Math.min(W / (span * iw), H / (span * ih));          // screen px per image px
-      el.style.cssText = 'height:150px;position:relative;overflow:hidden;background:#111';
+      el.style.cssText = 'height:170px;position:relative;overflow:hidden;background:#111';
       img.style.cssText = `position:absolute;max-width:none;width:${iw*k}px;height:${ih*k}px;left:${W/2 - cx*iw*k}px;top:${H/2 - cy*ih*k}px`;
       el.innerHTML = ''; el.appendChild(img);
     };
@@ -276,8 +276,8 @@ $('#btn-draw').onclick = () => {
 
 // ---------- exports ----------
 const today = () => new Date().toISOString().slice(0,10);
-$('#btn-pdf').onclick = async () => {
-  if (!signs.length) { setBar(0, 'Load an area first.'); return; }
+async function preparePrint() {
+  if (!signs.length) { setBar(0, 'Load an area first.'); return false; }
   $('#sheet-title').textContent = 'SIGN INVENTORY';
   const cnt = k => signs.filter(s => s.status === k).length;
   $('#sheet-meta').innerHTML = `<b>${esc(areaName)}</b><br>${today()} &nbsp;|&nbsp; ${signs.length} signs &nbsp;|&nbsp; ${cnt('verified')} verified, ${cnt('auto')} auto, ${cnt('nomatch')} no code, ${cnt('unreadable')} unreadable`;
@@ -289,8 +289,8 @@ $('#btn-pdf').onclick = async () => {
   const el = $('#map'); el.style.width = '1046px'; el.style.height = '979px'; map.invalidateSize();
   map.fitBounds(areaRect.getBounds(), {padding:[10,10]});
   await new Promise(r => setTimeout(r, 1800));
-  window.print();
-};
+}
+$('#btn-pdf').onclick = async () => { if (await preparePrint() !== false) window.print(); };
 window.addEventListener('afterprint', () => { const el = $('#map'); el.style.width = ''; el.style.height = ''; document.body.classList.remove('printing'); map.invalidateSize(); });
 
 $('#btn-xlsx').onclick = async () => {
@@ -318,4 +318,7 @@ $('#btn-xlsx').onclick = async () => {
   a.download = `${today()}_SIGN-INVENTORY_${areaName.replace(/[^A-Z0-9]+/gi, '-').replace(/-+$/, '').toUpperCase()}.xlsx`; a.click();
   setBar(1, 'Excel file downloaded.');
 };
+// link parameters: ?area=hds opens the test area; &print=1 sets the 11x17 sheet layout (for PDF export tools)
+const Q = new URLSearchParams(location.search);
+if (Q.get('area') === C.TEST.key) run(C.TEST.bbox, C.TEST.name, C.TEST.key).then(() => { if (Q.get('print') === '1') { document.querySelector('link[media=print]').media = 'all'; preparePrint(); } });
 })();
