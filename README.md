@@ -2,32 +2,43 @@
 
 Live site: https://drzkid96.github.io/fp-sign-inventory/
 
-Street signs on an aerial map, each shown with its standard sign code and a small picture of the sign face, plus a sign inventory. Exports an 11x17 PDF sheet and an Excel workbook in F&P format. Static site on GitHub Pages: no server and no paid services.
+Existing street signs found in street-level photos, placed on an aerial map with each sign's standard code and a small picture of the sign face, plus 11x17 plan sheets and an Excel inventory in F&P format. Everything runs on GitHub: GitHub Pages for the site, GitHub Actions for the inventory. Nothing calls a language model; every step is code and a small trained sign model that gives the same answer every run.
 
-## Use
-1. **Area:** open the verified test area (Huntington Dr S, El Sereno), frame any area and use the map view, or draw a box (up to about 6 sq km).
-2. **Load:** signs load from street-level imagery sign tiles in a few seconds, with a progress bar.
-3. **Inventory:** one row per code. Click a row to zoom to those signs; click a sign for its photo, legend, status and links to the photo and Street View.
-4. **Export:** PDF 11X17 (print to PDF) or EXCEL (SUMMARY and SIGNS tabs).
+## Run an area
+Add a file to `requests/`, for example `requests/hds.json`:
 
-Link to the test area directly: `?area=hds`.
+```json
+{"name": "HUNTINGTON DR, EL SERENO, LOS ANGELES", "bbox": [-118.1945, 34.0780, -118.1770, 34.0875], "corridor": "Huntington Dr"}
+```
 
-## Sign status
-| Status | Meaning |
-|---|---|
-| VERIFIED | Read from photos by two independent model reads, every disagreement decided by a third, stronger review, and checked against the standard sign face |
-| AUTO | Code from the detected sign class through a checked class table; not individually read |
-| NO CODE | A sign with no standard code (custom or local text) |
-| UNREADABLE | Photos too blurry, or only the back of the sign is visible |
+Pushing the file starts the `inventory` Action (or run it from the Actions tab with the area key). It writes `data/areas/<key>/`: `signs.json`, a photo crop per sign and the plan sheet PDF. The site shows the area at `?area=<key>`.
+
+## How it works
+1. **Photos:** every street-level photo in the area (Mapillary), 360° panoramas and older dash-cam photos.
+2. **Sign boxes:** the box drawn around each sign in each photo; backs of signs and advertising are dropped.
+3. **Codes:** each sign view is read by `pipeline/model/signnet.onnx`, an image model fine-tuned on hand-checked views of signs in El Sereno plus synthetic views made from the standard sign faces.
+4. **Placement:** views of the same code from different photos are matched by crossing their sight lines, so each pole gets its own position and signs stacked on one pole stay separate. The same sign seen in several photo years is merged.
+5. **Approach:** each sign is tied to its street, the direction of travel it serves (from the way it faces) and the next cross street, from OpenStreetMap.
+6. **Sheets:** 11x17 at 1" = 40', rotated along the corridor, with a callout and a sign picture at every pole, a sign table, a key map and every street that has no photos marked.
+
+## Accuracy (held-out signs the model never saw)
+| | Share of signs | Correct |
+|---|---|---|
+| All signs | 100% | about 89% |
+| High confidence (shown green) | about 83% | about 96% |
+| Check in field (shown orange) | about 17% | lower; confirm in the field |
+
+The limit is photo coverage, not reading: a street with no photos cannot be inventoried, and the sheets mark those streets.
 
 ## Files
 | Path | Contents |
 |---|---|
-| `js/app.js` | Map, sign tiles, matching, grouping, print sheet, Excel export |
-| `js/config.js` | Imagery API client token, test area, data version |
-| `data/library.json` | Standard sign codes and names (CA MUTCD 2026) |
-| `data/sprites/` | Small sign face pictures, one per code |
-| `data/classmap.json` | Detected sign class to code table (`src` notes how each entry was checked) |
-| `data/verified/` | Verified area files and sign photo crops |
+| `pipeline/run.py` | The full inventory for one area |
+| `pipeline/build_sheets.py`, `pipeline/sheets_geo.py` | Plan sheets |
+| `pipeline/model/` | Trained sign model (ONNX), its classes and the training labels |
+| `requests/` | One file per area |
+| `data/areas/` | Results per area |
+| `js/app.js` | Map, inventory table, print sheet, Excel export |
+| `data/library.json`, `data/sprites/` | Standard sign codes, names and sign face pictures (CA MUTCD 2026) |
 
-Sources: sign positions and photos, Mapillary (CC BY-SA); aerial, Esri World Imagery.
+Sources: street-level photos, Mapillary (CC BY-SA); aerial, Esri World Imagery; streets, OpenStreetMap (ODbL).

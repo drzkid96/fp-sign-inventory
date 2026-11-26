@@ -2,7 +2,8 @@
 'use strict';
 const C = window.CFG;
 const $ = s => document.querySelector(s);
-const STATUS_TXT = {verified:'VERIFIED', auto:'AUTO', nomatch:'NO CODE', unreadable:'UNREADABLE'};
+const STATUS_TXT = {verified:'HIGH CONFIDENCE', review:'CHECK IN FIELD', auto:'AUTO', nomatch:'NO CODE', unreadable:'UNREADABLE'};
+let AREAKEY = '', NAMESIGNS = [];
 let LIB = {}, CLASSMAP = {}, signs = [], area = null, areaName = '', layer, areaRect;
 
 // ---------- map ----------
@@ -68,7 +69,7 @@ function icon(s) {
   return L.divIcon({className:'', iconSize:[28,28], iconAnchor:[14,14],
     html:`<div class="sg st-${s.status}">${dir}<div class="ico">${im}</div><div class="lab">${esc(lab)}</div></div>`});
 }
-const PRI = {verified:0, auto:1, nomatch:2, unreadable:3};
+const PRI = {verified:0, review:1, auto:2, nomatch:3, unreadable:4};
 function poleIcon(g) {
   const show = g.slice(0, 4);
   const icos = show.map(s => `<div class="ico st-${s.status}">${s.code && LIB[s.code] ? `<img src="${pic(s)}" alt="">` : '<b>?</b>'}</div>`).join('');
@@ -113,7 +114,7 @@ async function renderPrintMap(Wc, Hc) {
   const a = P([area[3], area[0]]), b = P([area[1], area[2]]);
   g.save(); g.setLineDash([7, 5]); g.strokeStyle = '#FF6622'; g.lineWidth = 2; g.strokeRect(a[0], a[1], b[0] - a[0], b[1] - a[1]); g.restore();
   // signs
-  const cols = {verified:'#1B795A', auto:'#568CBB', nomatch:'#FF6622', unreadable:'#8a8f91'};
+  const cols = {verified:'#1B795A', review:'#FF6622', auto:'#568CBB', nomatch:'#FF6622', unreadable:'#8a8f91'};
   const groups = groupAt(z, 20, 20), keys = [...new Set(signs.filter(s => s.code).map(pic))];
   const spr = {}; (await Promise.all(keys.map(k => loadImg(k)))).forEach((im, i) => spr[keys[i]] = im);
   const boxes = [], labels = [];
@@ -190,13 +191,14 @@ let lastZ = null;
 map.on('zoomend', () => { if (signs.length && map.getZoom() !== lastZ) { lastZ = map.getZoom(); draw(); } });
 function popup(s) {
   const L0 = LIB[s.code];
-  const crop = s.crop ? `<img class="crop" src="data/verified/crops/${s.crop}" alt="">` : `<div class="crop" id="crop-${s.id}"></div>`;
+  const crop = s.crop ? `<img class="crop" src="data/areas/${AREAKEY}/crops/${s.crop}" alt="">` : `<div class="crop" id="crop-${s.id}"></div>`;
   return `<div class="pop">
     <div class="row">${L0 ? `<img class="ref" src="${sprite(s.code)}" alt="">` : ''}
       <div><h3>${esc(s.code || STATUS_TXT[s.status])}</h3><div class="nm">${esc(L0 ? L0.n : (s.cls || ''))}</div></div></div>
     ${crop}
     <table>
       <tr><td>STATUS</td><td><b>${STATUS_TXT[s.status]}</b>${s.conf ? ' / ' + esc(s.conf) : ''}</td></tr>
+      ${s.loc ? `<tr><td>APPROACH</td><td>${esc(s.loc)}</td></tr>` : ''}
       ${s.legend ? `<tr><td>LEGEND</td><td>${esc(s.legend)}</td></tr>` : ''}
       ${s.val ? `<tr><td>VALUE</td><td>${esc(s.val)}</td></tr>` : ''}
       ${s.plaque ? `<tr><td>PLAQUE</td><td>${esc(s.plaque)}</td></tr>` : ''}
@@ -324,7 +326,9 @@ async function run(bbox, name, verifiedKey) {
     setBar(0.05, 'Loading sign library');
     await ready;
     let ver = {};
-    if (verifiedKey) { setBar(0.08, 'Loading verified signs'); ver = await getJSON(`data/verified/${verifiedKey}.json?v=${C.DATA_V}`).catch(() => ({})); }
+    AREAKEY = verifiedKey || ''; NAMESIGNS = [];
+    if (verifiedKey) { setBar(0.08, 'Loading scanned signs'); ver = await getJSON(`data/areas/${verifiedKey}/signs.json?v=${C.DATA_V}`).catch(() => ({})); NAMESIGNS = ver.name_signs || []; }
+    const sl = $('#btn-sheets'); if (sl) { if (ver.sheets) { sl.href = `data/areas/${verifiedKey}/${ver.sheets}`; sl.hidden = false; } else sl.hidden = true; }
     const feats = ver.complete ? [] : await pull(bbox);
     setBar(0.85, 'Matching sign codes');
     const byId = new Map();
@@ -336,7 +340,7 @@ async function run(bbox, name, verifiedKey) {
     await rasterFaces();
     map.fitBounds(areaRect.getBounds(), {animate:false}); lastZ = map.getZoom(); draw(); inventory();
     const cnt = k => signs.filter(s => s.status === k).length;
-    setBar(1, `Done. ${signs.length} signs: ${cnt('verified')} verified, ${cnt('auto')} auto, ${cnt('nomatch')} no code, ${cnt('unreadable')} unreadable.`);
+    setBar(1, `Done. ${signs.length} signs: ` + ['verified','review','auto','nomatch','unreadable'].filter(k => cnt(k)).map(k => cnt(k) + ' ' + STATUS_TXT[k].toLowerCase()).join(', ') + (ver.coverage != null ? `. Photos cover ${ver.coverage}% of street length in this area.` : '.'));
   } catch (e) { setBar(0, 'Load failed: ' + e.message + '. Try again.'); console.error(e); }
 }
 const ready = Promise.all([getJSON('data/library.json?v=' + C.DATA_V), getJSON('data/classmap.json?v=' + C.DATA_V)]).then(([l, c]) => { LIB = l; CLASSMAP = c; });
@@ -361,7 +365,7 @@ async function preparePrint() {
   if (!signs.length) { setBar(0, 'Load an area first.'); return false; }
   $('#sheet-title').textContent = 'SIGN INVENTORY';
   const cnt = k => signs.filter(s => s.status === k).length;
-  $('#sheet-meta').innerHTML = `<b>${esc(areaName)}</b><br>${today()} &nbsp;|&nbsp; ${signs.length} signs &nbsp;|&nbsp; ` + ['verified','auto','nomatch','unreadable'].filter(k => cnt(k)).map(k => cnt(k) + ' ' + STATUS_TXT[k].toLowerCase()).join(', ');
+  $('#sheet-meta').innerHTML = `<b>${esc(areaName)}</b><br>${today()} &nbsp;|&nbsp; ${signs.length} signs &nbsp;|&nbsp; ` + ['verified','review','auto','nomatch','unreadable'].filter(k => cnt(k)).map(k => cnt(k) + ' ' + STATUS_TXT[k].toLowerCase()).join(', ');
   const rows = groups(); const fit = rows.slice(0, 33);
   $('#sheet-table tbody').innerHTML = fit.map(r => `<tr><td class="pic">${r.code ? `<img src="${pic(r.list[0])}" alt="">` : ''}</td><td class="code">${esc(label(r))}</td><td>${esc(nameOf(r))}</td><td class="qty">${r.n}</td></tr>`).join('');
   $('#sheet-notes').textContent = (rows.length > fit.length ? `${rows.length - fit.length} more code${rows.length - fit.length === 1 ? '' : 's'} in the Excel export. ` : '') +
@@ -396,8 +400,9 @@ $('#btn-xlsx').onclick = async () => {
     ws.getRow(1).height = 20;
   };
   sheet('SUMMARY', [['CODE',16],['SIGN',40],['QTY',8]], groups().map(r => [label(r), nameOf(r), r.n]));
-  sheet('SIGNS', [['ID',18],['CODE',12],['SIGN',32],['VALUE',8],['LEGEND',30],['ARROW',7],['PLAQUE',10],['STATUS',12],['CONFIDENCE',11],['LAT',11],['LON',12],['FACING',8],['PHOTO DATE',12],['PHOTO',40],['STREET VIEW',40]],
-    signs.map(s => [s.id, s.code || '', s.code ? LIB[s.code]?.n || '' : '', s.val || '', s.legend || '', s.arrow || '', s.plaque || '', STATUS_TXT[s.status], s.conf || '', +s.lat.toFixed(6), +s.lon.toFixed(6), s.dir != null ? Math.round(s.dir) : '', s.seen || '', mly(s), sv(s)]));
+  sheet('SIGNS', [['ID',10],['CODE',12],['SIGN',32],['VALUE',8],['APPROACH',34],['STATUS',16],['CONFIDENCE',11],['LAT',11],['LON',12],['FACING',8],['PHOTO YEARS',14],['PHOTO',40],['STREET VIEW',40]],
+    signs.map(s => [s.id, s.code || '', s.code ? LIB[s.code]?.n || '' : (s.cls || ''), s.val || '', s.loc || '', STATUS_TXT[s.status], s.conf || '', +s.lat.toFixed(6), +s.lon.toFixed(6), s.dir != null ? Math.round(s.dir) : '', (s.years || [s.seen]).join(', '), mly(s), sv(s)]));
+  if (NAMESIGNS.length) sheet('STREET NAME SIGNS', [['TYPE',12],['LOCATION',40],['PHOTO YEAR',12],['LAT',11],['LON',12]], NAMESIGNS.map(n => [n.kind === 'GUIDE' ? 'GUIDE' : 'STREET NAME', n.loc, n.seen, +n.lat.toFixed(6), +n.lon.toFixed(6)]));
   const buf = await wb.xlsx.writeBuffer();
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
   a.download = `${today()}_SIGN-INVENTORY_${areaName.replace(/[^A-Z0-9]+/gi, '-').replace(/-+$/, '').toUpperCase()}.xlsx`; a.click();

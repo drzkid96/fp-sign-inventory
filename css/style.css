@@ -67,7 +67,7 @@ td.code{font-weight:600;white-space:nowrap}
 .z-lo .sg .ico{width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 2px var(--white),0 0 0 3px var(--slate);background:var(--st,var(--jade))}
 .z-lo .sg .ico img,.z-lo .sg .ico b,.z-lo .sg .lab,.z-lo .sg .dir{display:none}
 .z-mid .sg .lab{display:none}
-.st-verified{--st:var(--jade)}.st-auto{--st:var(--blue)}.st-nomatch{--st:var(--orange)}.st-unreadable{--st:#8a8f91}
+.st-verified{--st:var(--jade)}.st-review{--st:var(--orange)}.st-auto{--st:var(--blue)}.st-nomatch{--st:var(--orange)}.st-unreadable{--st:#8a8f91}
 .leaflet-container{font-family:'Albert Sans',sans-serif}
 .pop{width:270px;font-size:12px}
 .pop .row{display:flex;gap:8px;align-items:center}
@@ -79,3 +79,6 @@ td.code{font-weight:600;white-space:nowrap}
 .pop table td{padding:2px 4px;border:none;background:none!important}
 .pop .links a{color:var(--emerald);font-weight:600;margin-right:10px}
 .drawbox{border:2px dashed var(--orange);background:rgba(255,102,34,.08)}
+.dot.review{background:var(--white);box-shadow:0 0 0 2px var(--orange)}
+.btnlink{font:600 11px 'Albert Sans',sans-serif;letter-spacing:.04em;padding:7px 10px;border:1px solid var(--emerald);background:var(--white);color:var(--emerald);border-radius:3px;text-decoration:none;display:inline-block}
+.btnlink:hover{background:var(--pale)}.btnlink[hidden]{display:none}

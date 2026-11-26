@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:ital,wght@0,300..700;1,400..700&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="css/style.css?v=1795669996">
-<link rel="stylesheet" href="css/print.css?v=1795669996" media="print">
+<link rel="stylesheet" href="css/style.css?v=1795682208">
+<link rel="stylesheet" href="css/print.css?v=1795682208" media="print">
 </head>
 <body>
 <aside id="panel">
@@ -20,7 +20,7 @@
   <section class="step" id="step-area">
     <h2><span>1</span>AREA</h2>
     <div class="btns">
-      <button id="btn-test" class="primary">HUNTINGTON DR S (VERIFIED)</button>
+      <button id="btn-test" class="primary">HUNTINGTON DR (SCANNED)</button>
       <button id="btn-view">USE MAP VIEW</button>
       <button id="btn-draw">DRAW BOX</button>
     </div>
@@ -36,10 +36,10 @@
   <section class="step grow" id="step-inv">
     <h2><span>3</span>INVENTORY <em id="inv-count"></em></h2>
     <div class="legend">
-      <span><i class="dot verified"></i>VERIFIED</span>
+      <span><i class="dot verified"></i>HIGH CONFIDENCE</span>
+      <span><i class="dot review"></i>CHECK IN FIELD</span>
       <span><i class="dot auto"></i>AUTO</span>
       <span><i class="dot nomatch"></i>NO CODE</span>
-      <span><i class="dot unreadable"></i>UNREADABLE</span>
     </div>
     <div class="tablewrap"><table id="inv"><thead><tr><th></th><th>CODE</th><th>SIGN</th><th>QTY</th></tr></thead><tbody></tbody></table></div>
   </section>
@@ -49,6 +49,7 @@
     <div class="btns">
       <button id="btn-pdf">PDF 11X17</button>
       <button id="btn-xlsx">EXCEL</button>
+      <a id="btn-sheets" class="btnlink" target="_blank" rel="noopener" hidden>PLAN SHEETS</a>
     </div>
   </section>
 </aside>
@@ -66,7 +67,7 @@
 </section>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="js/config.js?v=1795669996"></script>
-<script src="js/app.js?v=1795669996"></script>
+<script src="js/config.js?v=1795682208"></script>
+<script src="js/app.js?v=1795682208"></script>
 </body>
 </html>

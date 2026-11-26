@@ -1,0 +1,36 @@
+name: inventory
+# Runs the sign inventory for every area file added or changed under requests/.
+# An area file looks like: {"name": "HUNTINGTON DR, EL SERENO, LOS ANGELES", "bbox": [west, south, east, north], "corridor": "Huntington Dr"}
+on:
+  push:
+    paths: ['requests/**']
+  workflow_dispatch:
+    inputs:
+      area:
+        description: 'Area key (file name in requests/ without .json)'
+        required: true
+permissions:
+  contents: write
+concurrency: inventory
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 2}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Install
+        run: pip install numpy opencv-python-headless scipy scikit-learn onnxruntime reportlab pillow requests mapbox-vector-tile
+      - name: Run inventory
+        run: |
+          if [ -n "${{ github.event.inputs.area }}" ]; then files="requests/${{ github.event.inputs.area }}.json"
+          else files=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD -- requests/ | grep '\.json$' || true); fi
+          for f in $files; do echo "== $f"; python pipeline/run.py "$f"; done
+      - name: Commit results
+        run: |
+          git config user.name "inventory-bot"; git config user.email "actions@users.noreply.github.com"
+          git add data/areas
+          git commit -m "Sign inventory results" || exit 0
+          git pull --rebase && git push
