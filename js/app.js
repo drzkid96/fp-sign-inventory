@@ -27,7 +27,15 @@ const SPEED = {'R2-1': 0, 'SR4-1(CA)': 1};
 const speedFace = (code, val) => 'data:image/svg+xml,' + encodeURIComponent(SPEED[code]
   ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 64"><rect x="1" y="1" width="46" height="62" rx="3" fill="#fff" stroke="#000" stroke-width="2"/><rect x="2" y="2" width="44" height="12" fill="#C6D92E"/><text x="24" y="11.5" font-family="Arial" font-weight="700" font-size="9" text-anchor="middle">SCHOOL</text><text x="24" y="23" font-family="Arial" font-weight="700" font-size="7.5" text-anchor="middle">SPEED LIMIT</text><text x="24" y="49" font-family="Arial" font-weight="700" font-size="24" text-anchor="middle">${val}</text></svg>`
   : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 60"><rect x="1" y="1" width="46" height="58" rx="3" fill="#fff" stroke="#000" stroke-width="2"/><text x="24" y="15" font-family="Arial" font-weight="700" font-size="10" text-anchor="middle">SPEED</text><text x="24" y="26" font-family="Arial" font-weight="700" font-size="10" text-anchor="middle">LIMIT</text><text x="24" y="52" font-family="Arial" font-weight="700" font-size="26" text-anchor="middle">${val}</text></svg>`);
-const pic = s => (s.code in SPEED && s.val) ? speedFace(s.code, s.val) : sprite(s.code);
+const FACE = {};   // speed faces turned into plain images (keeps vector fonts out of exports)
+const pic = s => (s.code in SPEED && s.val) ? (FACE[s.code + s.val] || speedFace(s.code, s.val)) : sprite(s.code);
+async function rasterFaces() {
+  const need = [...new Set(signs.filter(s => s.code in SPEED && s.val).map(s => s.code + '|' + s.val))].filter(k => !FACE[k.replace('|', '')]);
+  await Promise.all(need.map(k => new Promise(r => { const [code, val] = k.split('|'), im = new Image();
+    im.onload = () => { const c = document.createElement('canvas'), h = 96, w = Math.round(h * im.width / im.height); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(im, 0, 0, w, h); FACE[code + val] = c.toDataURL('image/png'); r(); };
+    im.onerror = r; im.src = speedFace(code, val); })));
+}
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const getJSON = async u => { const r = await fetch(u); if (!r.ok) throw new Error(r.status + ' ' + u); return r.json(); };
 const sv = s => `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${s.lat},${s.lon}` + (s.dir!=null ? `&heading=${Math.round((s.dir+180)%360)}` : '');
@@ -325,6 +333,7 @@ async function run(bbox, name, verifiedKey) {
     signs = [...byId.values()];
     for (const s of signs) if (s.code in SPEED && !s.val) { const m = /(\d{2})/.exec(s.legend || ''); if (m) s.val = m[1]; }
     setBar(0.95, 'Drawing map');
+    await rasterFaces();
     map.fitBounds(areaRect.getBounds()); lastZ = map.getZoom(); draw(); inventory();
     const cnt = k => signs.filter(s => s.status === k).length;
     setBar(1, `Done. ${signs.length} signs: ${cnt('verified')} verified, ${cnt('auto')} auto, ${cnt('nomatch')} no code, ${cnt('unreadable')} unreadable.`);
