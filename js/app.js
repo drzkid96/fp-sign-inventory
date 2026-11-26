@@ -72,7 +72,7 @@ function openSign(s, latlng) {
 function draw() {
   layer.clearLayers();
   // group signs whose screen positions fall within 34 px (same pole or same corner)
-  const z = map.getZoom(), R = z >= 19 ? 26 : 34, groupsArr = [];
+  const z = map.getZoom(), R = z >= 20 ? 30 : z >= 19 ? 46 : 64, groupsArr = [];
   const pts = signs.map(s => ({s, p: map.project([s.lat, s.lon], z)})).sort((a, b) => PRI[a.s.status] - PRI[b.s.status]);
   for (const o of pts) {
     const g = groupsArr.find(g => g.p.distanceTo(o.p) < R);
@@ -92,7 +92,21 @@ function draw() {
     });
     g.list.forEach(s => s.m = m); m.addTo(layer);
   }
+  requestAnimationFrame(declutter);
 }
+// hide any code label that would overlap another label or a sign icon
+function declutter() {
+  const boxes = [...document.querySelectorAll('#map .ico, #map .more')].map(e => e.getBoundingClientRect());
+  const placed = [];
+  const hit = (a, b) => !(a.right < b.left - 2 || a.left > b.right + 2 || a.bottom < b.top - 1 || a.top > b.bottom + 1);
+  for (const el of document.querySelectorAll('#map .lab')) {
+    el.style.visibility = '';
+    const r = el.getBoundingClientRect(); if (!r.width) continue;
+    if (placed.some(p => hit(r, p)) || boxes.some(b => hit(r, b))) el.style.visibility = 'hidden';
+    else placed.push(r);
+  }
+}
+map.on('moveend', () => requestAnimationFrame(declutter));
 let lastZ = null;
 map.on('zoomend', () => { if (signs.length && map.getZoom() !== lastZ) { lastZ = map.getZoom(); draw(); } });
 function popup(s) {
@@ -124,9 +138,16 @@ async function liveCrop(s) {
     s.img = best.img;
     const [x0,y0,x1,y1] = best.b, w = x1-x0, h = y1-y0, pad = Math.max(w,h)*0.7;
     const cx = (x0+x1)/2, cy = (y0+y1)/2, span = Math.max(w,h) + 2*pad;
-    const W = el.clientWidth, H = 150, sc = Math.min(W, H) / span;
-    el.style.cssText = 'height:150px;position:relative;overflow:hidden;background:#111';
-    el.innerHTML = `<img src="${im.thumb_1024_url}" style="position:absolute;width:${sc*100}%;max-width:none;left:${W/2 - cx*sc*W}px;top:${H/2 - cy*sc*W*0.75}px">`;
+    const img = new Image();
+    img.onload = () => {
+      const W = el.clientWidth, H = 150, iw = img.naturalWidth, ih = img.naturalHeight;
+      const k = Math.min(W / (span * iw), H / (span * ih));          // screen px per image px
+      el.style.cssText = 'height:150px;position:relative;overflow:hidden;background:#111';
+      img.style.cssText = `position:absolute;max-width:none;width:${iw*k}px;height:${ih*k}px;left:${W/2 - cx*iw*k}px;top:${H/2 - cy*ih*k}px`;
+      el.innerHTML = ''; el.appendChild(img);
+    };
+    img.onerror = () => { el.textContent = 'Photo not available'; };
+    img.src = im.thumb_1024_url;
   } catch (e) { el.textContent = 'Photo not available'; }
 }
 
