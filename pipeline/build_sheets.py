@@ -68,7 +68,8 @@ for fr in F:
     # map image
     im=render(fr); im=cv2.cvtColor(im,cv2.COLOR_BGR2RGB)
     im=(im.astype(np.float32)*0.78+255*0.22).astype(np.uint8)  # lighten aerial for legibility
-    c.drawImage(ImageReader(Image.fromarray(im)),MX*inch,MY*inch,MAPW*inch,MAPH*inch)
+    Image.fromarray(im).save(f'aerial_{fr["i"]}.jpg',quality=80,optimize=True)
+    c.drawImage(f'aerial_{fr["i"]}.jpg',MX*inch,MY*inch,MAPW*inch,MAPH*inch)
     c.saveState(); p=c.beginPath(); p.rect(MX*inch,MY*inch,MAPW*inch,MAPH*inch); c.clipPath(p,stroke=0)
     P=lambda x,y:tuple(v for v in world_to_page(fr,x,y))
     # streets with no photos
