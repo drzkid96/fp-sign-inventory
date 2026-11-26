@@ -1,0 +1,236 @@
+(() => {
+'use strict';
+const C = window.CFG;
+const $ = s => document.querySelector(s);
+const STATUS_TXT = {verified:'VERIFIED', auto:'AUTO', nomatch:'NO CODE', unreadable:'UNREADABLE'};
+let LIB = {}, CLASSMAP = {}, signs = [], area = null, areaName = '', layer, areaRect;
+
+// ---------- map ----------
+const map = L.map('map', {zoomControl:true, preferCanvas:false}).setView([34.0835,-118.1860], 16);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 21, maxNativeZoom: 19,
+  attribution: 'Aerial: Esri, Maxar, Earthstar Geographics | Signs: Mapillary (CC BY-SA)'
+}).addTo(map);
+layer = L.layerGroup().addTo(map);
+const zoomClass = () => {
+  const z = map.getZoom(), el = $('#map');
+  el.classList.toggle('z-lo', z < 17);
+  el.classList.toggle('z-mid', z === 17);
+};
+map.on('zoomend', zoomClass); zoomClass();
+
+// ---------- helpers ----------
+const setBar = (p, t) => { $('#bar-fill').style.width = Math.round(p*100) + '%'; if (t) $('#status').textContent = t; };
+const sprite = code => LIB[code] ? `data/sprites/${LIB[code].s}.webp` : '';
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const getJSON = async u => { const r = await fetch(u); if (!r.ok) throw new Error(r.status + ' ' + u); return r.json(); };
+const sv = s => `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${s.lat},${s.lon}` + (s.dir!=null ? `&heading=${Math.round((s.dir+180)%360)}` : '');
+const mly = s => s.img ? `https://www.mapillary.com/app/?pKey=${s.img}&focus=photo` : `https://www.mapillary.com/app/?lat=${s.lat}&lng=${s.lon}&z=19`;
+
+// minimal Mapbox vector tile reader: returns bbox [x0,y0,x1,y1] in 0..1 of the first feature
+function mvtBBox(b64) {
+  const b = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const rd = (buf, i) => { let v = 0, s = 0, x; do { x = buf[i++]; v += (x & 0x7f) * 2 ** s; s += 7; } while (x & 0x80); return [v, i]; };
+  const fields = (buf) => { const out = []; let i = 0; while (i < buf.length) { let k; [k, i] = rd(buf, i); const f = k >> 3, w = k & 7;
+      if (w === 0) { let v; [v, i] = rd(buf, i); out.push([f, v]); } else if (w === 2) { let l; [l, i] = rd(buf, i); out.push([f, buf.subarray(i, i + l)]); i += l; }
+      else if (w === 5) { i += 4; } else if (w === 1) { i += 8; } else break; } return out; };
+  const lay = fields(b).find(f => f[0] === 3)[1];
+  const lf = fields(lay); const ext = (lf.find(f => f[0] === 5) || [0, 4096])[1];
+  const feat = lf.find(f => f[0] === 2)[1];
+  const geo = fields(feat).find(f => f[0] === 4)[1];
+  const cmds = []; let i = 0; while (i < geo.length) { let v; [v, i] = rd(geo, i); cmds.push(v); }
+  let x = 0, y = 0, k = 0; const xs = [], ys = [];
+  while (k < cmds.length) { const id = cmds[k] & 7, n = cmds[k] >> 3; k++;
+    if (id === 7) continue;
+    for (let j = 0; j < n; j++) { const dx = cmds[k++], dy = cmds[k++]; x += (dx >> 1) ^ -(dx & 1); y += (dy >> 1) ^ -(dy & 1); xs.push(x / ext); ys.push(y / ext); } }
+  return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+}
+
+// ---------- markers ----------
+function icon(s) {
+  const pic = s.code && LIB[s.code] ? `<img src="${sprite(s.code)}" alt="">` : `<b>?</b>`;
+  const lab = s.code ? s.code + (s.val ? ` (${s.val})` : '') : STATUS_TXT[s.status];
+  const dir = s.dir != null ? `<div class="dir" style="transform:rotate(${s.dir}deg)"></div>` : '';
+  return L.divIcon({className:'', iconSize:[28,28], iconAnchor:[14,14],
+    html:`<div class="sg st-${s.status}">${dir}<div class="ico">${pic}</div><div class="lab">${esc(lab)}</div></div>`});
+}
+function draw() {
+  layer.clearLayers();
+  for (const s of signs) {
+    const m = L.marker([s.lat, s.lon], {icon: icon(s), riseOnHover:true});
+    m.bindPopup(() => popup(s), {maxWidth: 300});
+    m.on('popupopen', () => s.status !== 'verified' && liveCrop(s));
+    s.m = m; m.addTo(layer);
+  }
+  inventory();
+}
+function popup(s) {
+  const L0 = LIB[s.code];
+  const crop = s.crop ? `<img class="crop" src="data/verified/crops/${s.crop}" alt="">` : `<div class="crop" id="crop-${s.id}" style="height:150px"></div>`;
+  return `<div class="pop">
+    <div class="row">${L0 ? `<img class="ref" src="${sprite(s.code)}" alt="">` : ''}
+      <div><h3>${esc(s.code || STATUS_TXT[s.status])}</h3><div class="nm">${esc(L0 ? L0.n : (s.cls || ''))}</div></div></div>
+    ${crop}
+    <table>
+      <tr><td>STATUS</td><td><b>${STATUS_TXT[s.status]}</b>${s.conf ? ' / ' + esc(s.conf) : ''}</td></tr>
+      ${s.legend ? `<tr><td>LEGEND</td><td>${esc(s.legend)}</td></tr>` : ''}
+      ${s.val ? `<tr><td>VALUE</td><td>${esc(s.val)}</td></tr>` : ''}
+      ${s.plaque ? `<tr><td>PLAQUE</td><td>${esc(s.plaque)}</td></tr>` : ''}
+      ${s.arrow ? `<tr><td>ARROW</td><td>${esc(s.arrow)}</td></tr>` : ''}
+      ${s.seen ? `<tr><td>PHOTO</td><td>${esc(s.seen)}</td></tr>` : ''}
+    </table>
+    <div class="links"><a href="${mly(s)}" target="_blank" rel="noopener">PHOTO</a><a href="${sv(s)}" target="_blank" rel="noopener">STREET VIEW</a></div>
+  </div>`;
+}
+async function liveCrop(s) {
+  const el = document.getElementById('crop-' + s.id); if (!el || el.dataset.done) return; el.dataset.done = 1;
+  try {
+    const d = (await getJSON(`https://graph.mapillary.com/${s.id}/detections?access_token=${C.MLY}&fields=image,geometry`)).data;
+    let best = null;
+    for (const x of d) { try { const b = mvtBBox(x.geometry); const a = (b[2]-b[0])*(b[3]-b[1]); if (!best || a > best.a) best = {b, a, img: x.image.id}; } catch (e) {} }
+    if (!best) { el.textContent = 'No photo crop'; return; }
+    const im = await getJSON(`https://graph.mapillary.com/${best.img}?access_token=${C.MLY}&fields=thumb_1024_url,captured_at`);
+    s.img = best.img;
+    const [x0,y0,x1,y1] = best.b, w = x1-x0, h = y1-y0, pad = Math.max(w,h)*0.7;
+    const cx = (x0+x1)/2, cy = (y0+y1)/2, span = Math.max(w,h) + 2*pad;
+    const W = el.clientWidth, H = 150, sc = Math.min(W, H) / span;
+    el.style.cssText = 'height:150px;position:relative;overflow:hidden;background:#111';
+    el.innerHTML = `<img src="${im.thumb_1024_url}" style="position:absolute;width:${sc*100}%;max-width:none;left:${W/2 - cx*sc*W}px;top:${H/2 - cy*sc*W*0.75}px">`;
+  } catch (e) { el.textContent = 'Photo not available'; }
+}
+
+// ---------- inventory ----------
+function groups() {
+  const g = new Map();
+  for (const s of signs) {
+    const key = s.code ? s.code : STATUS_TXT[s.status];
+    const r = g.get(key) || {key, code: s.code, n: 0, arrows: new Set(), list: [], status: s.status};
+    r.n++; if (s.arrow === 'L' || s.arrow === 'R') r.arrows.add(s.arrow); r.list.push(s); g.set(key, r);
+  }
+  return [...g.values()].sort((a, b) => (!a.code) - (!b.code) || a.key.localeCompare(b.key, undefined, {numeric:true}));
+}
+const label = r => r.code ? r.key + (r.arrows.size === 2 ? ' (LT/RT)' : r.arrows.has('L') ? ' (LT)' : r.arrows.has('R') ? ' (RT)' : '') : r.key;
+const nameOf = r => r.code ? LIB[r.code]?.n || '' : (r.status === 'nomatch' ? 'Sign with no standard code' : 'Sign could not be read');
+function rowsHTML() {
+  return groups().map(r => `<tr data-k="${esc(r.key)}"><td class="pic">${r.code ? `<img src="${sprite(r.code)}" alt="">` : ''}</td>
+    <td class="code">${esc(label(r))}</td><td>${esc(nameOf(r))}</td><td class="qty">${r.n}</td></tr>`).join('');
+}
+function inventory() {
+  $('#inv tbody').innerHTML = rowsHTML();
+  $('#inv-count').textContent = signs.length ? `${signs.length} SIGNS` : '';
+  $('#inv tbody').onclick = e => { const tr = e.target.closest('tr'); if (!tr) return;
+    const r = groups().find(x => x.key === tr.dataset.k); if (!r) return;
+    const b = L.latLngBounds(r.list.map(s => [s.lat, s.lon])); map.fitBounds(b.pad(0.3), {maxZoom: 19});
+    if (r.list.length === 1) r.list[0].m.openPopup(); };
+}
+
+// ---------- data ----------
+function fromClass(f) {
+  const v = f.object_value, cm = CLASSMAP[v];
+  const [lon, lat] = f.geometry.coordinates;
+  const s = {id: f.id, lat, lon, cls: v, dir: f.aligned_direction ?? null,
+    seen: f.last_seen_at ? new Date(f.last_seen_at).toISOString().slice(0,10) : ''};
+  if (cm && cm.code && LIB[cm.code]) { s.code = cm.code; s.val = cm.val || ''; s.arrow = cm.arrow || ''; s.status = 'auto'; }
+  else s.status = 'nomatch';
+  return s;
+}
+async function pull(bbox) {
+  const [w, so, e, n] = bbox, st = C.CHUNK_DEG, cells = [];
+  for (let x = w; x < e; x += st) for (let y = so; y < n; y += st) cells.push([x, y, Math.min(x+st, e), Math.min(y+st, n)]);
+  const out = new Map(); let done = 0;
+  for (const c of cells) {
+    let url = `https://graph.mapillary.com/map_features?access_token=${C.MLY}&fields=id,object_value,object_type,geometry,aligned_direction,last_seen_at&bbox=${c.map(v => v.toFixed(6)).join(',')}&limit=2000`;
+    while (url) {
+      const d = await getJSON(url);
+      for (const f of d.data || []) if (f.object_type === 'trafficsign' || /^(regulatory|warning|information|complementary)--/.test(f.object_value)) out.set(f.id, f);
+      url = d.paging && d.paging.next;
+    }
+    done++; setBar(0.1 + 0.7 * done / cells.length, `Loading signs: block ${done} of ${cells.length}, ${out.size} found`);
+  }
+  return [...out.values()];
+}
+async function run(bbox, name, verifiedKey) {
+  const a = (bbox[2]-bbox[0]) * (bbox[3]-bbox[1]);
+  if (a > C.MAX_AREA_DEG2) { setBar(0, 'Area too large. Zoom in to about 6 sq km or less.'); return; }
+  area = bbox; areaName = name; signs = []; layer.clearLayers(); inventory();
+  if (areaRect) map.removeLayer(areaRect);
+  areaRect = L.rectangle([[bbox[1], bbox[0]], [bbox[3], bbox[2]]], {color:'#FF6622', weight:2, dashArray:'6 5', fill:false, interactive:false}).addTo(map);
+  try {
+    setBar(0.05, 'Loading sign library');
+    await ready;
+    let ver = {};
+    if (verifiedKey) { setBar(0.08, 'Loading verified signs'); ver = await getJSON(`data/verified/${verifiedKey}.json`).catch(() => ({})); }
+    const feats = await pull(bbox);
+    setBar(0.85, 'Matching sign codes');
+    const byId = new Map();
+    for (const f of feats) byId.set(f.id, fromClass(f));
+    for (const v of (ver.signs || [])) byId.set(v.id, Object.assign(byId.get(v.id) || {}, v));
+    signs = [...byId.values()];
+    setBar(0.95, 'Drawing map');
+    draw();
+    const cnt = k => signs.filter(s => s.status === k).length;
+    setBar(1, `Done. ${signs.length} signs: ${cnt('verified')} verified, ${cnt('auto')} auto, ${cnt('nomatch')} no code, ${cnt('unreadable')} unreadable.`);
+    map.fitBounds(areaRect.getBounds());
+  } catch (e) { setBar(0, 'Load failed: ' + e.message + '. Try again.'); console.error(e); }
+}
+const ready = Promise.all([getJSON('data/library.json'), getJSON('data/classmap.json')]).then(([l, c]) => { LIB = l; CLASSMAP = c; });
+
+// ---------- area tools ----------
+$('#btn-test').onclick = () => run(C.TEST.bbox, C.TEST.name, C.TEST.key);
+$('#btn-view').onclick = () => { const b = map.getBounds(); run([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], 'MAP VIEW'); };
+$('#btn-draw').onclick = () => {
+  const btn = $('#btn-draw'); btn.classList.add('on'); map.dragging.disable(); $('#area-hint').textContent = 'Drag a box on the map.';
+  let start, box;
+  const down = e => { start = e.latlng; box = L.rectangle([start, start], {color:'#FF6622', weight:2, dashArray:'6 5', fillOpacity:.06}).addTo(map); };
+  const move = e => { if (box) box.setBounds([start, e.latlng]); };
+  const up = () => { map.off('mousedown', down).off('mousemove', move).off('mouseup', up); map.dragging.enable(); btn.classList.remove('on');
+    if (!box) return; const b = box.getBounds(); map.removeLayer(box); $('#area-hint').textContent = 'Box set.';
+    run([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], 'DRAWN AREA'); };
+  map.on('mousedown', down).on('mousemove', move).on('mouseup', up);
+};
+
+// ---------- exports ----------
+const today = () => new Date().toISOString().slice(0,10);
+$('#btn-pdf').onclick = async () => {
+  if (!signs.length) { setBar(0, 'Load an area first.'); return; }
+  $('#sheet-title').textContent = 'SIGN INVENTORY';
+  const cnt = k => signs.filter(s => s.status === k).length;
+  $('#sheet-meta').innerHTML = `<b>${esc(areaName)}</b><br>${today()} &nbsp;|&nbsp; ${signs.length} signs &nbsp;|&nbsp; ${cnt('verified')} verified, ${cnt('auto')} auto, ${cnt('nomatch')} no code, ${cnt('unreadable')} unreadable`;
+  const rows = groups(); const fit = rows.slice(0, 30);
+  $('#sheet-table tbody').innerHTML = fit.map(r => `<tr><td class="pic">${r.code ? `<img src="${sprite(r.code)}" alt="">` : ''}</td><td class="code">${esc(label(r))}</td><td>${esc(nameOf(r))}</td><td class="qty">${r.n}</td></tr>`).join('');
+  $('#sheet-notes').textContent = (rows.length > fit.length ? `${rows.length - fit.length} more codes in the Excel export. ` : '') +
+    'Sources: street-level imagery and sign positions, Mapillary (CC BY-SA); aerial, Esri. Codes per CA MUTCD 2026. Verified signs read from photos and checked against the standard sign face.';
+  document.body.classList.add('printing');
+  const el = $('#map'); el.style.width = '1046px'; el.style.height = '979px'; map.invalidateSize();
+  map.fitBounds(areaRect.getBounds(), {padding:[10,10]});
+  await new Promise(r => setTimeout(r, 1800));
+  window.print();
+};
+window.addEventListener('afterprint', () => { const el = $('#map'); el.style.width = ''; el.style.height = ''; document.body.classList.remove('printing'); map.invalidateSize(); });
+
+$('#btn-xlsx').onclick = async () => {
+  if (!signs.length) { setBar(0, 'Load an area first.'); return; }
+  setBar(1, 'Building Excel file');
+  if (!window.ExcelJS) await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+  const wb = new ExcelJS.Workbook(); const F = {name:'Albert Sans', size:10, color:{argb:'FF00242E'}};
+  const sheet = (name, cols, data) => {
+    const ws = wb.addWorksheet(name, {views:[{state:'frozen', ySplit:1}]});
+    ws.columns = cols.map(([h, w]) => ({header:h, width:w}));
+    data.forEach(r => ws.addRow(r));
+    ws.eachRow((row, i) => row.eachCell({includeEmpty:true}, c => {
+      c.font = i === 1 ? {...F, bold:true, color:{argb:'FFFFFFFF'}} : F;
+      c.alignment = {vertical:'middle', wrapText:true};
+      if (i === 1) c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FF00574A'}};
+      else if (i % 2 === 1) c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFF2F2F2'}};
+    }));
+    ws.getRow(1).height = 20;
+  };
+  sheet('SUMMARY', [['CODE',16],['SIGN',40],['QTY',8]], groups().map(r => [label(r), nameOf(r), r.n]));
+  sheet('SIGNS', [['ID',18],['CODE',12],['SIGN',32],['VALUE',8],['LEGEND',30],['ARROW',7],['PLAQUE',10],['STATUS',12],['CONFIDENCE',11],['LAT',11],['LON',12],['FACING',8],['PHOTO DATE',12],['PHOTO',40],['STREET VIEW',40]],
+    signs.map(s => [s.id, s.code || '', s.code ? LIB[s.code]?.n || '' : '', s.val || '', s.legend || '', s.arrow || '', s.plaque || '', STATUS_TXT[s.status], s.conf || '', +s.lat.toFixed(6), +s.lon.toFixed(6), s.dir != null ? Math.round(s.dir) : '', s.seen || '', mly(s), sv(s)]));
+  const buf = await wb.xlsx.writeBuffer();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+  a.download = `${today()}_SIGN-INVENTORY_${areaName.replace(/[^A-Z0-9]+/gi, '-').replace(/-+$/, '').toUpperCase()}.xlsx`; a.click();
+  setBar(1, 'Excel file downloaded.');
+};
+})();

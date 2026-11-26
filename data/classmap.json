@@ -1,0 +1,1148 @@
+{
+"complementary--advisory-exit-or-ramp-speed--g1": {
+"code": "W13-2",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"complementary--both-directions--g1": {
+"code": "W1-7",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"complementary--chevron-left--g1": {
+"code": "W1-8",
+"val": "",
+"arrow": "L",
+"src": "auto"
+},
+"complementary--chevron-right--g1": {
+"code": "W1-8",
+"val": "",
+"arrow": "R",
+"src": "auto"
+},
+"complementary--dead-end--g1": {
+"code": "W14-1a",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"complementary--disabled-persons--g1": {
+"code": "R7-8",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"complementary--one-direction-left--g1": {
+"code": "W1-6",
+"val": "",
+"arrow": "L",
+"src": "auto"
+},
+"complementary--one-direction-right--g1": {
+"code": "W1-6",
+"val": "",
+"arrow": "R",
+"src": "auto"
+},
+"regulatory--circular-intersection--g3": {
+"code": "R3-8",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--cross-only-on-pedestrian-signal--g1": {
+"code": "R10-2",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--do-not-block-intersection--g1": {
+"code": "R10-7",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--do-not-pass--g1": {
+"code": "R4-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--do-not-stop-on-tracks--g1": {
+"code": "R8-8",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--dual-speed-limits--g1": {
+"code": "R2-4a",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--end-of-school-zone--g1": {
+"code": "S5-2",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--go-straight--g3": {
+"code": "R3-5",
+"val": "a",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--go-straight-or-turn-left--g2": {
+"code": "R3-6",
+"val": "",
+"arrow": "L",
+"src": "auto"
+},
+"regulatory--go-straight-or-turn-right--g2": {
+"code": "R3-6",
+"val": "",
+"arrow": "R",
+"src": "auto"
+},
+"regulatory--in-street-pedestrian-crossing--g1": {
+"code": "R1-6",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--keep-right--g3": {
+"code": "R4-7a",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--left-turn-yield-on-green--g1": {
+"code": "R10-12",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--light-rail-do-not-pass--g1": {
+"code": "R15-5",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--look--g1": {
+"code": "R15-8",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-10--g3": {
+"code": "R2-1",
+"val": "10",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-100--g3": {
+"code": "R2-1",
+"val": "100",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-15--g3": {
+"code": "R2-1",
+"val": "15",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-20--g3": {
+"code": "R2-1",
+"val": "20",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-5--g3": {
+"code": "R2-1",
+"val": "5",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-65--g2": {
+"code": "R2-1",
+"val": "65",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-70--g3": {
+"code": "R2-1",
+"val": "70",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-75--g2": {
+"code": "R2-1",
+"val": "75",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-80--g3": {
+"code": "R2-1",
+"val": "80",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-85--g2": {
+"code": "R2-1",
+"val": "85",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-90--g3": {
+"code": "R2-1",
+"val": "90",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-10--g2": {
+"code": "R2-1",
+"val": "10",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-10--g3": {
+"code": "R2-1",
+"val": "10",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-15--g2": {
+"code": "R2-1",
+"val": "15",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-15--g3": {
+"code": "R2-1",
+"val": "15",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-20--g2": {
+"code": "R2-1",
+"val": "20",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-20--g3": {
+"code": "R2-1",
+"val": "20",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-25--g2": {
+"code": "R2-1",
+"val": "25",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-25--g3": {
+"code": "R2-1",
+"val": "25",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-30--g2": {
+"code": "R2-1",
+"val": "30",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-30--g3": {
+"code": "R2-1",
+"val": "30",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-35--g2": {
+"code": "R2-1",
+"val": "35",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-35--g3": {
+"code": "R2-1",
+"val": "35",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-40--g2": {
+"code": "R2-1",
+"val": "40",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-40--g3": {
+"code": "R2-1",
+"val": "40",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-45--g2": {
+"code": "R2-1",
+"val": "45",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-45--g3": {
+"code": "R2-1",
+"val": "45",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-5--g2": {
+"code": "R2-1",
+"val": "5",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-5--g3": {
+"code": "R2-1",
+"val": "5",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-50--g2": {
+"code": "R2-1",
+"val": "50",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-50--g3": {
+"code": "R2-1",
+"val": "50",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-55--g2": {
+"code": "R2-1",
+"val": "55",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-55--g3": {
+"code": "R2-1",
+"val": "55",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-60--g2": {
+"code": "R2-1",
+"val": "60",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-60--g3": {
+"code": "R2-1",
+"val": "60",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-65--g2": {
+"code": "R2-1",
+"val": "65",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-65--g3": {
+"code": "R2-1",
+"val": "65",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-70--g2": {
+"code": "R2-1",
+"val": "70",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-70--g3": {
+"code": "R2-1",
+"val": "70",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-75--g2": {
+"code": "R2-1",
+"val": "75",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-75--g3": {
+"code": "R2-1",
+"val": "75",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-80--g2": {
+"code": "R2-1",
+"val": "80",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-80--g3": {
+"code": "R2-1",
+"val": "80",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-85--g2": {
+"code": "R2-1",
+"val": "85",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--maximum-speed-limit-led-85--g3": {
+"code": "R2-1",
+"val": "85",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-10--g1": {
+"code": "R2-3P",
+"val": "10",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-15--g1": {
+"code": "R2-3P",
+"val": "15",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-20--g1": {
+"code": "R2-3P",
+"val": "20",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-25--g1": {
+"code": "R2-3P",
+"val": "25",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-30--g1": {
+"code": "R2-3P",
+"val": "30",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-35--g1": {
+"code": "R2-3P",
+"val": "35",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-40--g1": {
+"code": "R2-3P",
+"val": "40",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-45--g1": {
+"code": "R2-3P",
+"val": "45",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-5--g1": {
+"code": "R2-3P",
+"val": "5",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-50--g1": {
+"code": "R2-3P",
+"val": "50",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-55--g1": {
+"code": "R2-3P",
+"val": "55",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-60--g1": {
+"code": "R2-3P",
+"val": "60",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-65--g1": {
+"code": "R2-3P",
+"val": "65",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-70--g1": {
+"code": "R2-3P",
+"val": "70",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-75--g1": {
+"code": "R2-3P",
+"val": "75",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-80--g1": {
+"code": "R2-3P",
+"val": "80",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--night-speed-limit-85--g1": {
+"code": "R2-3P",
+"val": "85",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--no-bicycles--g2": {
+"code": "R5-6",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--no-entry--g1": {
+"code": "R5-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--no-left-or-u-turn--g1": {
+"code": "R3-18",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--no-left-turn--g1": {
+"code": "R3-2",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--no-left-turn--g4": {
+"code": "R3-2",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--no-parking--g2": {
+"code": "R8-3",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--no-parking-or-no-stopping--g2": {
+"code": "R7-1",
+"val": "",
+"arrow": "R",
+"src": "auto"
+},
+"regulatory--no-pedestrians--g2": {
+"code": "R9-3a",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--no-right-turn--g1": {
+"code": "R3-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--no-straight-through--g1": {
+"code": "R3-27",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--no-through-trucks--g1": {
+"code": "R5-2b",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--no-turn-on-red--g1": {
+"code": "R10-11a",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--no-turns--g1": {
+"code": "R3-3",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--no-u-turn--g1": {
+"code": "R3-4",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--one-way-left--g2": {
+"code": "R6-2",
+"val": "",
+"arrow": "L",
+"src": "auto"
+},
+"regulatory--one-way-left--g3": {
+"code": "R6-1",
+"val": "",
+"arrow": "L",
+"src": "auto"
+},
+"regulatory--one-way-right--g2": {
+"code": "R6-2",
+"val": "",
+"arrow": "R",
+"src": "auto"
+},
+"regulatory--one-way-right--g3": {
+"code": "R6-1",
+"val": "",
+"arrow": "R",
+"src": "auto"
+},
+"regulatory--parking-restrictions--g1": {
+"code": "R7-21",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--parking-restrictions--g2": {
+"code": "R7-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--parking-restrictions--g3": {
+"code": "R7-5",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--pass-with-care--g1": {
+"code": "R4-2",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--pedestrians-push-button--g1": {
+"code": "R10-3",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--reversible-lanes--g1": {
+"code": "R3-9e",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--road-closed--g2": {
+"code": "R11-2",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--sidewalk-closed--g1": {
+"code": "R9-10",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--speeding-fines-increased--g1": {
+"code": "R2-10",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--stay-in-lane--g1": {
+"code": "R4-9",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--stop--g1": {
+"code": "R1-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--stop-here-on-red-or-flashing-light--g1": {
+"code": "R10-6",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--stop-here-on-red-or-flashing-light--g2": {
+"code": "R10-6a",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--triple-lanes-go-straight-center-lane--g1": {
+"code": "R3-8",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--triple-lanes-turn-left-center-lane--g1": {
+"code": "R3-8",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--triple-lanes-turn-right-center-lane--g1": {
+"code": "R3-8",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-route--g1": {
+"code": "R14-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-10--g1": {
+"code": "R2-2P",
+"val": "10",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-15--g1": {
+"code": "R2-2P",
+"val": "15",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-20--g1": {
+"code": "R2-2P",
+"val": "20",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-25--g1": {
+"code": "R2-2P",
+"val": "25",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-30--g1": {
+"code": "R2-2P",
+"val": "30",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-35--g1": {
+"code": "R2-2P",
+"val": "35",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-40--g1": {
+"code": "R2-2P",
+"val": "40",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-45--g1": {
+"code": "R2-2P",
+"val": "45",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-5--g1": {
+"code": "R2-2P",
+"val": "5",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-50--g1": {
+"code": "R2-2P",
+"val": "50",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-55--g1": {
+"code": "R2-2P",
+"val": "55",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-60--g1": {
+"code": "R2-2P",
+"val": "60",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-65--g1": {
+"code": "R2-2P",
+"val": "65",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-70--g1": {
+"code": "R2-2P",
+"val": "70",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-75--g1": {
+"code": "R2-2P",
+"val": "75",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-80--g1": {
+"code": "R2-2P",
+"val": "80",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--truck-speed-limit-85--g1": {
+"code": "R2-2P",
+"val": "85",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--turn-left--g2": {
+"code": "R3-5",
+"val": "",
+"arrow": "L",
+"src": "auto"
+},
+"regulatory--turn-right--g3": {
+"code": "R3-5",
+"val": "",
+"arrow": "R",
+"src": "auto"
+},
+"regulatory--turning-vehicles-yield-to-pedestrians--g1": {
+"code": "R10-15",
+"val": "",
+"arrow": "R",
+"src": "auto"
+},
+"regulatory--u-turn--g2": {
+"code": "R3-5",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--use-crosswalk--g1": {
+"code": "R9-3bP",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--weight-limit-per-tandem-axle--g1": {
+"code": "R12-4",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--wrong-way--g1": {
+"code": "R5-1a",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"regulatory--yield--g1": {
+"code": "R1-2",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--added-lane-from-entering-roadway--g1": {
+"code": "W4-3",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--added-lane-left--g1": {
+"code": "W4-3",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--added-lane-right--g1": {
+"code": "W4-3",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--crossroads--g3": {
+"code": "W2-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--curve-left--g2": {
+"code": "W1-2",
+"val": "",
+"arrow": "L",
+"src": "auto"
+},
+"warning--curve-right--g2": {
+"code": "W1-2",
+"val": "",
+"arrow": "R",
+"src": "auto"
+},
+"warning--divided-highway--g2": {
+"code": "W6-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--divided-highway-ends--g2": {
+"code": "W6-2",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--domestic-animals--g3": {
+"code": "W11-4",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--double-curve-first-left--g2": {
+"code": "W1-4",
+"val": "",
+"arrow": "L",
+"src": "auto"
+},
+"warning--double-curve-first-right--g2": {
+"code": "W1-4",
+"val": "",
+"arrow": "R",
+"src": "auto"
+},
+"warning--emergency-vehicles--g1": {
+"code": "W11-8",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--entering-roadway-merge--g1": {
+"code": "W4-5",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--equestrians-crossing--g2": {
+"code": "W11-7",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--flaggers-in-road--g2": {
+"code": "W20-7",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--golf-carts-crossing--g1": {
+"code": "W11-11",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--hairpin-curve-left--g1": {
+"code": "W1-11",
+"val": "",
+"arrow": "L",
+"src": "auto"
+},
+"warning--narrow-bridge--g2": {
+"code": "W5-2a",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--no-passing-zone--g1": {
+"code": "W14-3",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--pedestrians-crossing--g4": {
+"code": "W11-2",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--railroad-crossing--g1": {
+"code": "W10-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--road-narrows--g2": {
+"code": "W4-8",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--road-narrows-left--g2": {
+"code": "W4-2",
+"val": "",
+"arrow": "L",
+"src": "auto"
+},
+"warning--road-narrows-right--g2": {
+"code": "W4-2",
+"val": "",
+"arrow": "R",
+"src": "auto"
+},
+"warning--roadworks--g5": {
+"code": "W21-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--roundabout--g2": {
+"code": "W2-6",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--school-zone--g2": {
+"code": "S1-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--slippery-road-surface--g2": {
+"code": "W8-5",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--snowmobiles--g3": {
+"code": "W11-6",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--steep-ascent--g3": {
+"code": "W7-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--steep-descent--g3": {
+"code": "W7-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--stop-ahead--g1": {
+"code": "W3-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--t-roads--g2": {
+"code": "W2-4",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--traffic-merges-left--g2": {
+"code": "W4-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--traffic-merges-right--g2": {
+"code": "W4-1",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--traffic-signals--g3": {
+"code": "W3-3",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--trail-crossing--g2": {
+"code": "W11-15",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--trucks-rollover--g1": {
+"code": "W1-13",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--turn-left--g1": {
+"code": "W1-1",
+"val": "",
+"arrow": "L",
+"src": "auto"
+},
+"warning--turn-right--g1": {
+"code": "W1-1",
+"val": "",
+"arrow": "R",
+"src": "auto"
+},
+"warning--two-way-traffic--g2": {
+"code": "W6-3",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--wild-animals--g4": {
+"code": "W11-3",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--winding-road-first-left--g1": {
+"code": "W1-5",
+"val": "",
+"arrow": "L",
+"src": "auto"
+},
+"warning--winding-road-first-right--g1": {
+"code": "W1-5",
+"val": "",
+"arrow": "R",
+"src": "auto"
+},
+"warning--y-roads--g1": {
+"code": "W2-5",
+"val": "",
+"arrow": "",
+"src": "auto"
+},
+"warning--yield-ahead--g1": {
+"code": "W3-2",
+"val": "",
+"arrow": "",
+"src": "auto"
+}
+}
