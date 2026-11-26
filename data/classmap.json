@@ -63,7 +63,7 @@
 "code": "R10-7",
 "val": "",
 "arrow": "",
-"src": "auto"
+"src": "checked 3/3"
 },
 "regulatory--do-not-pass--g1": {
 "code": "R4-1",
@@ -87,7 +87,7 @@
 "code": "S5-2",
 "val": "",
 "arrow": "",
-"src": "auto"
+"src": "checked 4/4"
 },
 "regulatory--go-straight--g3": {
 "code": "R3-5",
@@ -123,7 +123,7 @@
 "code": "R10-12",
 "val": "",
 "arrow": "",
-"src": "auto"
+"src": "checked 1/1"
 },
 "regulatory--light-rail-do-not-pass--g1": {
 "code": "R15-5",
@@ -519,7 +519,7 @@
 "code": "R5-1",
 "val": "",
 "arrow": "",
-"src": "auto"
+"src": "checked 1/1"
 },
 "regulatory--no-left-or-u-turn--g1": {
 "code": "R3-18",
@@ -530,8 +530,8 @@
 "regulatory--no-left-turn--g1": {
 "code": "R3-2",
 "val": "",
-"arrow": "",
-"src": "auto"
+"arrow": "L",
+"src": "checked 3/4"
 },
 "regulatory--no-left-turn--g4": {
 "code": "R3-2",
@@ -560,8 +560,8 @@
 "regulatory--no-right-turn--g1": {
 "code": "R3-1",
 "val": "",
-"arrow": "",
-"src": "auto"
+"arrow": "R",
+"src": "checked 1/1"
 },
 "regulatory--no-straight-through--g1": {
 "code": "R3-27",
@@ -591,7 +591,7 @@
 "code": "R3-4",
 "val": "",
 "arrow": "",
-"src": "auto"
+"src": "checked 7/7"
 },
 "regulatory--one-way-left--g2": {
 "code": "R6-2",
@@ -615,7 +615,7 @@
 "code": "R6-1",
 "val": "",
 "arrow": "R",
-"src": "auto"
+"src": "checked 6/6"
 },
 "regulatory--parking-restrictions--g1": {
 "code": "R7-21",
@@ -657,7 +657,7 @@
 "code": "R11-2",
 "val": "",
 "arrow": "",
-"src": "auto"
+"src": "checked 1/1"
 },
 "regulatory--sidewalk-closed--g1": {
 "code": "R9-10",
@@ -681,7 +681,7 @@
 "code": "R1-1",
 "val": "",
 "arrow": "",
-"src": "auto"
+"src": "checked 2/2"
 },
 "regulatory--stop-here-on-red-or-flashing-light--g1": {
 "code": "R10-6",
@@ -867,7 +867,7 @@
 "code": "R1-2",
 "val": "",
 "arrow": "",
-"src": "auto"
+"src": "checked 2/2"
 },
 "warning--added-lane-from-entering-roadway--g1": {
 "code": "W4-3",
@@ -939,7 +939,7 @@
 "code": "W11-8",
 "val": "",
 "arrow": "",
-"src": "auto"
+"src": "checked 3/3"
 },
 "warning--entering-roadway-merge--g1": {
 "code": "W4-5",
@@ -1026,10 +1026,10 @@
 "src": "auto"
 },
 "warning--school-zone--g2": {
-"code": "S1-1",
+"code": "SW24-3(CA)",
 "val": "",
 "arrow": "",
-"src": "auto"
+"src": "checked 4/4"
 },
 "warning--slippery-road-surface--g2": {
 "code": "W8-5",
@@ -1059,7 +1059,7 @@
 "code": "W3-1",
 "val": "",
 "arrow": "",
-"src": "auto"
+"src": "checked 5/5"
 },
 "warning--t-roads--g2": {
 "code": "W2-4",
@@ -1144,5 +1144,59 @@
 "val": "",
 "arrow": "",
 "src": "auto"
+},
+"regulatory--priority-road--g1": {
+"code": "OM1-1",
+"val": "",
+"arrow": "",
+"src": "checked 14/16"
+},
+"regulatory--maximum-speed-limit-25--g2": {
+"code": "R2-1",
+"val": "25",
+"arrow": "",
+"src": "checked 3/7 (school speed signs share this class)"
+},
+"regulatory--maximum-speed-limit-35--g2": {
+"code": "R2-1",
+"val": "35",
+"arrow": "",
+"src": "checked 6/6"
+},
+"regulatory--dual-lanes-all-directions-on-right--g1": {
+"code": "R3-8",
+"val": "",
+"arrow": "",
+"src": "checked 1/1"
+},
+"regulatory--keep-right--g4": {
+"code": "R4-7",
+"val": "",
+"arrow": "R",
+"src": "checked 14/15"
+},
+"warning--pass-left-or-right--g2": {
+"code": "W12-1",
+"val": "",
+"arrow": "",
+"src": "checked 3/3"
+},
+"regulatory--bicycles-only--g2": {
+"code": "R3-17",
+"val": "",
+"arrow": "",
+"src": "checked 2/2"
+},
+"regulatory--bicycles-only--g4": {
+"code": "R9-20",
+"val": "",
+"arrow": "",
+"src": "checked 1/1"
+},
+"regulatory--lane-control--g1": {
+"code": "R3-7",
+"val": "",
+"arrow": "R",
+"src": "checked 4/4"
 }
 }
