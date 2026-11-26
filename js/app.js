@@ -211,7 +211,7 @@ async function run(bbox, name, verifiedKey) {
     setBar(0.05, 'Loading sign library');
     await ready;
     let ver = {};
-    if (verifiedKey) { setBar(0.08, 'Loading verified signs'); ver = await getJSON(`data/verified/${verifiedKey}.json`).catch(() => ({})); }
+    if (verifiedKey) { setBar(0.08, 'Loading verified signs'); ver = await getJSON(`data/verified/${verifiedKey}.json?v=${C.DATA_V}`).catch(() => ({})); }
     const feats = await pull(bbox);
     setBar(0.85, 'Matching sign codes');
     const byId = new Map();
@@ -224,7 +224,7 @@ async function run(bbox, name, verifiedKey) {
     setBar(1, `Done. ${signs.length} signs: ${cnt('verified')} verified, ${cnt('auto')} auto, ${cnt('nomatch')} no code, ${cnt('unreadable')} unreadable.`);
   } catch (e) { setBar(0, 'Load failed: ' + e.message + '. Try again.'); console.error(e); }
 }
-const ready = Promise.all([getJSON('data/library.json'), getJSON('data/classmap.json')]).then(([l, c]) => { LIB = l; CLASSMAP = c; });
+const ready = Promise.all([getJSON('data/library.json?v=' + C.DATA_V), getJSON('data/classmap.json?v=' + C.DATA_V)]).then(([l, c]) => { LIB = l; CLASSMAP = c; });
 
 // ---------- area tools ----------
 $('#btn-test').onclick = () => run(C.TEST.bbox, C.TEST.name, C.TEST.key);
