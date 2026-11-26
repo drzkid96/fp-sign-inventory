@@ -356,7 +356,7 @@ $('#btn-draw').onclick = () => {
 };
 
 // ---------- exports ----------
-const today = () => new Date().toISOString().slice(0,10);
+const today = () => new Date().toLocaleDateString('en-CA');
 async function preparePrint() {
   if (!signs.length) { setBar(0, 'Load an area first.'); return false; }
   $('#sheet-title').textContent = 'SIGN INVENTORY';
