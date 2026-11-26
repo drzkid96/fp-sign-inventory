@@ -346,7 +346,7 @@ async function run(bbox, name, verifiedKey) {
 const ready = Promise.all([getJSON('data/library.json?v=' + C.DATA_V), getJSON('data/classmap.json?v=' + C.DATA_V)]).then(([l, c]) => { LIB = l; CLASSMAP = c; });
 
 // ---------- area tools ----------
-$('#btn-test').onclick = () => run(C.TEST.bbox, C.TEST.name, C.TEST.key);
+{ const b0 = $('#btn-test'); C.AREAS.forEach((a, i) => { const b = i ? b0.cloneNode(true) : b0; b.id = i ? '' : 'btn-test'; b.textContent = a.name.split(',')[0]; b.onclick = () => run(a.bbox, a.name, a.key); if (i) b0.parentNode.insertBefore(b, b0.nextSibling); }); }
 $('#btn-view').onclick = () => { const b = map.getBounds(); run([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], 'MAP VIEW'); };
 $('#btn-draw').onclick = () => {
   const btn = $('#btn-draw'); btn.classList.add('on'); map.dragging.disable(); $('#area-hint').textContent = 'Drag a box on the map.';
@@ -410,5 +410,6 @@ $('#btn-xlsx').onclick = async () => {
 };
 // link parameters: ?area=hds opens the test area; &print=1 sets the 11x17 sheet layout (for PDF export tools)
 const Q = new URLSearchParams(location.search);
-if (Q.get('area') === C.TEST.key) run(C.TEST.bbox, C.TEST.name, C.TEST.key).then(() => { if (Q.get('print') === '1') setTimeout(preparePrint, 600); });
+const QA = C.AREAS.find(a => a.key === Q.get('area'));
+if (QA) run(QA.bbox, QA.name, QA.key).then(() => { if (Q.get('print') === '1') setTimeout(preparePrint, 600); });
 })();
