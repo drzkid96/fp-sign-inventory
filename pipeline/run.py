@@ -22,13 +22,17 @@ log = lambda *a: print(time.strftime('%H:%M:%S'), *a, flush=True)
 HIGH = 0.8  # mean model probability over the views of a sign; set so the confident share matches the held-out test (about 96% correct)
 SIGN = ('object--traffic-sign', 'regulatory--', 'warning--', 'information--', 'complementary--', 'object--sign--information')
 
+UA = {'User-Agent': 'fp-sign-inventory/1.0 (+https://github.com/drzkid96/fp-sign-inventory)'}
+FAILS = collections.Counter()
 def get(url, **p):
-    for t in range(4):
+    for t in range(6):
         try:
-            r = requests.get(url, params=p, timeout=90)
+            r = requests.get(url, params=p, timeout=90, headers=UA)
             if r.status_code == 200: return r
+            if r.status_code in (400, 404): break
         except Exception: pass
-        time.sleep(2 + 3 * t)
+        time.sleep(2 + 4 * t)
+    FAILS[url.split('?')[0].split('/')[2]] += 1
     return None
 
 # 1. photos in the area
@@ -40,7 +44,10 @@ def images():
             bx = [BBOX[0] + (BBOX[2] - BBOX[0]) * i / n, BBOX[1] + (BBOX[3] - BBOX[1]) * j / n, BBOX[0] + (BBOX[2] - BBOX[0]) * (i + 1) / n, BBOX[1] + (BBOX[3] - BBOX[1]) * (j + 1) / n]
             r = get('https://graph.mapillary.com/images', access_token=TOKEN, bbox=','.join(f'{v:.6f}' for v in bx), limit=2000,
                     fields='id,captured_at,computed_geometry,computed_compass_angle,is_pano,width,height,camera_parameters,thumb_original_url,thumb_2048_url')
-            for d in (r.json().get('data', []) if r else []):
+            if r is None: raise SystemExit(f'photo list failed for part of the area {bx}; nothing was written')
+            data = r.json().get('data', [])
+            if len(data) >= 2000: raise SystemExit('too many photos in one cell; use a smaller area')
+            for d in data:
                 if d.get('computed_geometry') and d.get('computed_compass_angle') is not None: out[d['id']] = d
     A = list(out.values()); json.dump(A, open('all_images.json', 'w')); return A
 
@@ -247,8 +254,12 @@ def coverage(A, O):
 
 if __name__ == '__main__':
     A = images(); log('photos', len(A))
+    if not A: raise SystemExit('no street-level photos in this area')
     D = dets(A); log('photos with sign boxes', sum(1 for v in D.values() if v))
     R = crops(A, D); log('sign views', len(R))
+    if FAILS: log('requests that failed after retries', dict(FAILS))
+    nd = sum(1 for v in D.values() if v)
+    if FAILS.get('graph.mapillary.com', 0) > 0.05 * len(A): raise SystemExit('too many sign-box requests failed; rerun later')
     P, CL = classify(R); log('classified')
     S = group(R, P, CL); log('signs', len(S))
     O = osm(); S = approach(S, O); cov = coverage(A, O); log('street length with photos', cov, '%')
