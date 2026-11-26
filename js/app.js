@@ -325,7 +325,7 @@ async function run(bbox, name, verifiedKey) {
     await ready;
     let ver = {};
     if (verifiedKey) { setBar(0.08, 'Loading verified signs'); ver = await getJSON(`data/verified/${verifiedKey}.json?v=${C.DATA_V}`).catch(() => ({})); }
-    const feats = await pull(bbox);
+    const feats = ver.complete ? [] : await pull(bbox);
     setBar(0.85, 'Matching sign codes');
     const byId = new Map();
     for (const f of feats) byId.set(f.id, fromClass(f));
@@ -361,11 +361,11 @@ async function preparePrint() {
   if (!signs.length) { setBar(0, 'Load an area first.'); return false; }
   $('#sheet-title').textContent = 'SIGN INVENTORY';
   const cnt = k => signs.filter(s => s.status === k).length;
-  $('#sheet-meta').innerHTML = `<b>${esc(areaName)}</b><br>${today()} &nbsp;|&nbsp; ${signs.length} signs &nbsp;|&nbsp; ${cnt('verified')} verified, ${cnt('auto')} auto, ${cnt('nomatch')} no code, ${cnt('unreadable')} unreadable`;
+  $('#sheet-meta').innerHTML = `<b>${esc(areaName)}</b><br>${today()} &nbsp;|&nbsp; ${signs.length} signs &nbsp;|&nbsp; ` + ['verified','auto','nomatch','unreadable'].filter(k => cnt(k)).map(k => cnt(k) + ' ' + STATUS_TXT[k].toLowerCase()).join(', ');
   const rows = groups(); const fit = rows.slice(0, 33);
   $('#sheet-table tbody').innerHTML = fit.map(r => `<tr><td class="pic">${r.code ? `<img src="${pic(r.list[0])}" alt="">` : ''}</td><td class="code">${esc(label(r))}</td><td>${esc(nameOf(r))}</td><td class="qty">${r.n}</td></tr>`).join('');
   $('#sheet-notes').textContent = (rows.length > fit.length ? `${rows.length - fit.length} more code${rows.length - fit.length === 1 ? '' : 's'} in the Excel export. ` : '') +
-    'Sources: street-level imagery and sign positions, Mapillary (CC BY-SA); aerial, Esri. Codes per CA MUTCD 2026. Verified signs read from photos and checked against the standard sign face.';
+    'Sources: street-level imagery, Mapillary (CC BY-SA); aerial, Esri. Codes per CA MUTCD 2026. Signs found by scanning every photo, placed from several views, read twice and checked against the standard sign face.';
   document.body.classList.add('printing'); zoomClass();
   const el = $('#map'); el.style.flex = 'none'; el.style.width = '1046px'; el.style.height = '979px'; map.invalidateSize();
   map.options.zoomSnap = 0.25; map.closePopup();
