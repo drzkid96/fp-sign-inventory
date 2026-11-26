@@ -7,13 +7,13 @@ let LIB = {}, CLASSMAP = {}, signs = [], area = null, areaName = '', layer, area
 
 // ---------- map ----------
 const map = L.map('map', {zoomControl:true, preferCanvas:false}).setView([34.0835,-118.1860], 16);
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+const base = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
   maxZoom: 21, maxNativeZoom: 19,
   attribution: 'Aerial: Esri, Maxar, Earthstar Geographics | Signs: Mapillary (CC BY-SA)'
 }).addTo(map);
 layer = L.layerGroup().addTo(map);
 const zoomClass = () => {
-  const z = map.getZoom(), el = $('#map');
+  const z = document.body.classList.contains('printing') ? 99 : map.getZoom(), el = $('#map');
   el.classList.toggle('z-lo', z < 17);
   el.classList.toggle('z-mid', z === 17);
 };
@@ -22,6 +22,12 @@ map.on('zoomend', zoomClass); zoomClass();
 // ---------- helpers ----------
 const setBar = (p, t) => { $('#bar-fill').style.width = Math.round(p*100) + '%'; if (t) $('#status').textContent = t; };
 const sprite = code => LIB[code] ? `data/sprites/${LIB[code].s}.webp` : '';
+// speed limit faces drawn with the posted number (the library face shows a sample value)
+const SPEED = {'R2-1': 0, 'SR4-1(CA)': 1};
+const speedFace = (code, val) => 'data:image/svg+xml,' + encodeURIComponent(SPEED[code]
+  ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 64"><rect x="1" y="1" width="46" height="62" rx="3" fill="#fff" stroke="#000" stroke-width="2"/><rect x="2" y="2" width="44" height="12" fill="#C6D92E"/><text x="24" y="11.5" font-family="Arial" font-weight="700" font-size="9" text-anchor="middle">SCHOOL</text><text x="24" y="23" font-family="Arial" font-weight="700" font-size="7.5" text-anchor="middle">SPEED LIMIT</text><text x="24" y="49" font-family="Arial" font-weight="700" font-size="24" text-anchor="middle">${val}</text></svg>`
+  : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 60"><rect x="1" y="1" width="46" height="58" rx="3" fill="#fff" stroke="#000" stroke-width="2"/><text x="24" y="15" font-family="Arial" font-weight="700" font-size="10" text-anchor="middle">SPEED</text><text x="24" y="26" font-family="Arial" font-weight="700" font-size="10" text-anchor="middle">LIMIT</text><text x="24" y="52" font-family="Arial" font-weight="700" font-size="26" text-anchor="middle">${val}</text></svg>`);
+const pic = s => (s.code in SPEED && s.val) ? speedFace(s.code, s.val) : sprite(s.code);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const getJSON = async u => { const r = await fetch(u); if (!r.ok) throw new Error(r.status + ' ' + u); return r.json(); };
 const sv = s => `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${s.lat},${s.lon}` + (s.dir!=null ? `&heading=${Math.round((s.dir+180)%360)}` : '');
@@ -48,16 +54,16 @@ function mvtBBox(b64) {
 
 // ---------- markers ----------
 function icon(s) {
-  const pic = s.code && LIB[s.code] ? `<img src="${sprite(s.code)}" alt="">` : `<b>?</b>`;
+  const im = s.code && LIB[s.code] ? `<img src="${pic(s)}" alt="">` : `<b>?</b>`;
   const lab = s.code ? s.code + (s.val ? ` (${s.val})` : '') : STATUS_TXT[s.status];
   const dir = s.dir != null ? `<div class="dir" style="transform:rotate(${s.dir}deg)"></div>` : '';
   return L.divIcon({className:'', iconSize:[28,28], iconAnchor:[14,14],
-    html:`<div class="sg st-${s.status}">${dir}<div class="ico">${pic}</div><div class="lab">${esc(lab)}</div></div>`});
+    html:`<div class="sg st-${s.status}">${dir}<div class="ico">${im}</div><div class="lab">${esc(lab)}</div></div>`});
 }
 const PRI = {verified:0, auto:1, nomatch:2, unreadable:3};
 function poleIcon(g) {
   const show = g.slice(0, 4);
-  const icos = show.map(s => `<div class="ico st-${s.status}">${s.code && LIB[s.code] ? `<img src="${sprite(s.code)}" alt="">` : '<b>?</b>'}</div>`).join('');
+  const icos = show.map(s => `<div class="ico st-${s.status}">${s.code && LIB[s.code] ? `<img src="${pic(s)}" alt="">` : '<b>?</b>'}</div>`).join('');
   const more = g.length > 4 ? `<span class="more">+${g.length - 4}</span>` : '';
   const lab = g.map(s => s.code ? s.code + (s.val ? ` (${s.val})` : '') : STATUS_TXT[s.status]).filter((v, i, a) => a.indexOf(v) === i).join(' · ');
   const w = Math.min(g.length, 4) * 28 + (more ? 22 : 0);
@@ -69,15 +75,80 @@ function openSign(s, latlng) {
   if (s.status !== 'verified') liveCrop(s);
   return p;
 }
+// group signs whose screen positions fall close together (same pole or same corner)
+function groupAt(z) {
+  const R = z >= 20 ? 30 : z >= 19 ? 46 : 64, out = [];
+  const pts = signs.map(s => ({s, p: map.project([s.lat, s.lon], z)})).sort((a, b) => PRI[a.s.status] - PRI[b.s.status]);
+  for (const o of pts) { const g = out.find(g => g.p.distanceTo(o.p) < R); if (g) g.list.push(o.s); else out.push({p: o.p, list: [o.s]}); }
+  // merge groups whose icon rows would overlap (each icon 28 px wide, up to 4 plus a count chip)
+  const box = g => { const w = Math.min(g.list.length, 4) * 28 + (g.list.length > 4 ? 24 : 0); return [g.p.x - 16, g.p.y - 16, g.p.x - 16 + w + 4, g.p.y + 16]; };
+  const hit = (a, b) => !(a[2] < b[0] || a[0] > b[2] || a[3] < b[1] || a[1] > b[3]);
+  for (let again = true; again;) { again = false;
+    for (let i = 0; i < out.length && !again; i++) for (let j = i + 1; j < out.length; j++)
+      if (hit(box(out[i]), box(out[j]))) { out[i].list.push(...out[j].list); out.splice(j, 1); again = true; break; } }
+  return out;
+}
+const loadImg = src => new Promise(r => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
+// still image of the map for the 11x17 sheet: aerial, area outline, sign pictures and codes, north arrow, scale bar
+async function renderPrintMap(Wc, Hc) {
+  const S = 2, cv = document.createElement('canvas'); cv.width = Wc * S; cv.height = Hc * S;
+  const g = cv.getContext('2d'); g.scale(S, S); g.fillStyle = '#ddd'; g.fillRect(0, 0, Wc, Hc);
+  const z = map.getZoom(), tz = Math.min(19, Math.ceil(z)), f = 2 ** (z - tz);
+  const c = map.project(map.getCenter(), z), ox = c.x - Wc / 2, oy = c.y - Hc / 2;
+  const tiles = [];
+  for (let tx = Math.floor(ox / f / 256); tx <= Math.floor((ox + Wc) / f / 256); tx++)
+    for (let ty = Math.floor(oy / f / 256); ty <= Math.floor((oy + Hc) / f / 256); ty++) tiles.push([tx, ty]);
+  const imgs = await Promise.all(tiles.map(([tx, ty]) => loadImg(`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${tz}/${ty}/${tx}`)));
+  tiles.forEach(([tx, ty], i) => { if (imgs[i]) g.drawImage(imgs[i], tx * 256 * f - ox, ty * 256 * f - oy, 256 * f + 0.5, 256 * f + 0.5); });
+  const P = ll => { const p = map.project(ll, z); return [p.x - ox, p.y - oy]; };
+  // area outline
+  const a = P([area[3], area[0]]), b = P([area[1], area[2]]);
+  g.save(); g.setLineDash([7, 5]); g.strokeStyle = '#FF6622'; g.lineWidth = 2; g.strokeRect(a[0], a[1], b[0] - a[0], b[1] - a[1]); g.restore();
+  // signs
+  const cols = {verified:'#1B795A', auto:'#568CBB', nomatch:'#FF6622', unreadable:'#8a8f91'};
+  const groups = groupAt(z), keys = [...new Set(signs.filter(s => s.code).map(pic))];
+  const spr = {}; (await Promise.all(keys.map(k => loadImg(k)))).forEach((im, i) => spr[keys[i]] = im);
+  const boxes = [], labels = [];
+  g.font = "700 10px 'Albert Sans'"; g.textBaseline = 'middle';
+  for (const gr of groups) {
+    const [x, y] = [gr.p.x - ox, gr.p.y - oy], show = gr.list.slice(0, 4);
+    show.forEach((sg, i) => {
+      const bx = x - 13 + i * 28, by = y - 13;
+      g.fillStyle = '#fff'; g.strokeStyle = cols[sg.status]; g.lineWidth = 2.5;
+      g.beginPath(); g.roundRect(bx, by, 26, 26, 3); g.fill(); g.stroke();
+      if (sg.code && spr[pic(sg)]) { const im = spr[pic(sg)], k = Math.min(22 / im.width, 22 / im.height); g.drawImage(im, bx + 13 - im.width * k / 2, by + 13 - im.height * k / 2, im.width * k, im.height * k); }
+      else { g.fillStyle = '#FF6622'; g.fillText('?', bx + 10, by + 13); }
+      boxes.push([bx - 2, by - 2, bx + 28, by + 28]);
+    });
+    if (gr.list.length > 4) { const mx = x - 13 + 4 * 28; g.fillStyle = '#00242E'; g.fillRect(mx, y - 7, 20, 14); g.fillStyle = '#fff'; g.fillText('+' + (gr.list.length - 4), mx + 2, y); boxes.push([mx, y - 7, mx + 20, y + 7]); }
+    const txt = gr.list.map(sg => sg.code ? sg.code + (sg.val ? ` (${sg.val})` : '') : STATUS_TXT[sg.status]).filter((v, i, arr) => arr.indexOf(v) === i).join(' · ');
+    labels.push([txt, x - 13, y + 17]);
+  }
+  const hit = (p, q) => !(p[2] < q[0] || p[0] > q[2] || p[3] < q[1] || p[1] > q[3]);
+  const placed = [];
+  for (const [txt, lx, ly] of labels) {
+    const w = g.measureText(txt).width + 8, r = [lx, ly, lx + w, ly + 14];
+    if (r[2] > Wc - 4 || r[3] > Hc - 20 || placed.some(q => hit(r, q)) || boxes.some(q => hit(r, q))) continue;
+    placed.push(r); g.fillStyle = '#00242E'; g.fillRect(r[0], r[1], w, 14); g.fillStyle = '#fff'; g.fillText(txt, lx + 4, ly + 7);
+  }
+  // north arrow
+  g.fillStyle = 'rgba(255,255,255,.92)'; g.fillRect(Wc - 52, 12, 40, 52); g.fillStyle = '#00242E';
+  g.beginPath(); g.moveTo(Wc - 32, 18); g.lineTo(Wc - 42, 44); g.lineTo(Wc - 32, 38); g.lineTo(Wc - 22, 44); g.closePath(); g.fill();
+  g.font = "700 12px 'Albert Sans'"; g.textAlign = 'center'; g.fillText('N', Wc - 32, 54); g.textAlign = 'left';
+  // scale bar in feet
+  const mpp = 40075016.686 * Math.cos(map.getCenter().lat * Math.PI / 180) / (256 * 2 ** z), ftpp = mpp * 3.28084;
+  const nice = [50, 100, 200, 250, 500, 1000, 2000].find(v => v / ftpp > 90) || 2000, len = nice / ftpp;
+  g.fillStyle = 'rgba(255,255,255,.92)'; g.fillRect(12, Hc - 44, len + 70, 32); g.fillStyle = '#00242E';
+  g.fillRect(20, Hc - 26, len / 2, 6); g.strokeStyle = '#00242E'; g.lineWidth = 1; g.strokeRect(20, Hc - 26, len, 6);
+  g.font = "600 10px 'Albert Sans'"; g.fillText('0', 17, Hc - 35); g.fillText(nice + ' FT', 20 + len - 8, Hc - 35);
+  // attribution
+  g.font = "500 9px 'Albert Sans'"; const at = 'Aerial: Esri, Maxar, Earthstar Geographics | Sign positions: Mapillary (CC BY-SA)';
+  const aw = g.measureText(at).width + 10; g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(Wc - aw - 2, Hc - 16, aw, 14); g.fillStyle = '#00242E'; g.fillText(at, Wc - aw + 3, Hc - 9);
+  return cv.toDataURL('image/jpeg', 0.9);
+}
 function draw() {
   layer.clearLayers();
-  // group signs whose screen positions fall within 34 px (same pole or same corner)
-  const z = map.getZoom(), R = z >= 20 ? 30 : z >= 19 ? 46 : 64, groupsArr = [];
-  const pts = signs.map(s => ({s, p: map.project([s.lat, s.lon], z)})).sort((a, b) => PRI[a.s.status] - PRI[b.s.status]);
-  for (const o of pts) {
-    const g = groupsArr.find(g => g.p.distanceTo(o.p) < R);
-    if (g) g.list.push(o.s); else groupsArr.push({p: o.p, list: [o.s]});
-  }
+  const z = map.getZoom(), groupsArr = groupAt(z);
   for (const g of groupsArr) {
     const ll = map.unproject(g.p, z);
     if (g.list.length === 1) {
@@ -86,7 +157,7 @@ function draw() {
     }
     const m = L.marker(ll, {icon: poleIcon(g.list), riseOnHover:true});
     m.on('click', () => {
-      const html = '<div class="plist">' + g.list.map((s, i) => `<div data-i="${i}">${s.code && LIB[s.code] ? `<img src="${sprite(s.code)}" alt="">` : '<b>?</b>'}<span><b>${esc(s.code || STATUS_TXT[s.status])}</b>${s.val ? ' (' + esc(s.val) + ')' : ''}</span><i>${STATUS_TXT[s.status]}</i></div>`).join('') + '</div>';
+      const html = '<div class="plist">' + g.list.map((s, i) => `<div data-i="${i}">${s.code && LIB[s.code] ? `<img src="${pic(s)}" alt="">` : '<b>?</b>'}<span><b>${esc(s.code || STATUS_TXT[s.status])}</b>${s.val ? ' (' + esc(s.val) + ')' : ''}</span><i>${STATUS_TXT[s.status]}</i></div>`).join('') + '</div>';
       const p = L.popup({maxWidth:300}).setLatLng(ll).setContent(html).openOn(map);
       p.getElement().querySelector('.plist').onclick = e => { const d = e.target.closest('[data-i]'); if (d) openSign(g.list[+d.dataset.i], ll); };
     });
@@ -155,7 +226,7 @@ async function liveCrop(s) {
 function groups() {
   const g = new Map();
   for (const s of signs) {
-    const key = s.code ? s.code : STATUS_TXT[s.status];
+    const key = s.code ? s.code + (s.code in SPEED && s.val ? ` (${s.val})` : '') : STATUS_TXT[s.status];
     const r = g.get(key) || {key, code: s.code, n: 0, arrows: new Set(), list: [], status: s.status};
     r.n++; if (s.arrow === 'L' || s.arrow === 'R') r.arrows.add(s.arrow); r.list.push(s); g.set(key, r);
   }
@@ -164,7 +235,7 @@ function groups() {
 const label = r => r.code ? r.key + (r.arrows.size === 2 ? ' (LT/RT)' : r.arrows.has('L') ? ' (LT)' : r.arrows.has('R') ? ' (RT)' : '') : r.key;
 const nameOf = r => r.code ? LIB[r.code]?.n || '' : (r.status === 'nomatch' ? 'Sign with no standard code' : 'Sign could not be read');
 function rowsHTML() {
-  return groups().map(r => `<tr data-k="${esc(r.key)}"><td class="pic">${r.code ? `<img src="${sprite(r.code)}" alt="">` : ''}</td>
+  return groups().map(r => `<tr data-k="${esc(r.key)}"><td class="pic">${r.code ? `<img src="${pic(r.list[0])}" alt="">` : ''}</td>
     <td class="code">${esc(label(r))}</td><td>${esc(nameOf(r))}</td><td class="qty">${r.n}</td></tr>`).join('');
 }
 function inventory() {
@@ -252,6 +323,7 @@ async function run(bbox, name, verifiedKey) {
     for (const f of feats) byId.set(f.id, fromClass(f));
     for (const v of (ver.signs || [])) byId.set(v.id, Object.assign(byId.get(v.id) || {}, v));
     signs = [...byId.values()];
+    for (const s of signs) if (s.code in SPEED && !s.val) { const m = /(\d{2})/.exec(s.legend || ''); if (m) s.val = m[1]; }
     setBar(0.95, 'Drawing map');
     map.fitBounds(areaRect.getBounds()); lastZ = map.getZoom(); draw(); inventory();
     const cnt = k => signs.filter(s => s.status === k).length;
@@ -281,17 +353,21 @@ async function preparePrint() {
   $('#sheet-title').textContent = 'SIGN INVENTORY';
   const cnt = k => signs.filter(s => s.status === k).length;
   $('#sheet-meta').innerHTML = `<b>${esc(areaName)}</b><br>${today()} &nbsp;|&nbsp; ${signs.length} signs &nbsp;|&nbsp; ${cnt('verified')} verified, ${cnt('auto')} auto, ${cnt('nomatch')} no code, ${cnt('unreadable')} unreadable`;
-  const rows = groups(); const fit = rows.slice(0, 30);
-  $('#sheet-table tbody').innerHTML = fit.map(r => `<tr><td class="pic">${r.code ? `<img src="${sprite(r.code)}" alt="">` : ''}</td><td class="code">${esc(label(r))}</td><td>${esc(nameOf(r))}</td><td class="qty">${r.n}</td></tr>`).join('');
-  $('#sheet-notes').textContent = (rows.length > fit.length ? `${rows.length - fit.length} more codes in the Excel export. ` : '') +
+  const rows = groups(); const fit = rows.slice(0, 33);
+  $('#sheet-table tbody').innerHTML = fit.map(r => `<tr><td class="pic">${r.code ? `<img src="${pic(r.list[0])}" alt="">` : ''}</td><td class="code">${esc(label(r))}</td><td>${esc(nameOf(r))}</td><td class="qty">${r.n}</td></tr>`).join('');
+  $('#sheet-notes').textContent = (rows.length > fit.length ? `${rows.length - fit.length} more code${rows.length - fit.length === 1 ? '' : 's'} in the Excel export. ` : '') +
     'Sources: street-level imagery and sign positions, Mapillary (CC BY-SA); aerial, Esri. Codes per CA MUTCD 2026. Verified signs read from photos and checked against the standard sign face.';
-  document.body.classList.add('printing');
-  const el = $('#map'); el.style.width = '1046px'; el.style.height = '979px'; map.invalidateSize();
-  map.fitBounds(areaRect.getBounds(), {padding:[10,10]});
-  await new Promise(r => setTimeout(r, 1800));
+  document.body.classList.add('printing'); zoomClass();
+  const el = $('#map'); el.style.flex = 'none'; el.style.width = '1046px'; el.style.height = '979px'; map.invalidateSize();
+  map.options.zoomSnap = 0.25; map.closePopup();
+  const sb = L.latLngBounds(signs.map(s => [s.lat, s.lon]));
+  map.fitBounds(sb.pad(0.06), {padding:[30,30], animate:false});
+  lastZ = map.getZoom(); draw();
+  await document.fonts.ready;
+  $('#print-map').src = await renderPrintMap(1046, 979);
 }
 $('#btn-pdf').onclick = async () => { if (await preparePrint() !== false) window.print(); };
-window.addEventListener('afterprint', () => { const el = $('#map'); el.style.width = ''; el.style.height = ''; document.body.classList.remove('printing'); map.invalidateSize(); });
+window.addEventListener('afterprint', () => { map.options.zoomSnap = 1; const el = $('#map'); el.style.flex = ''; el.style.width = ''; el.style.height = ''; document.body.classList.remove('printing'); zoomClass(); map.invalidateSize(); });
 
 $('#btn-xlsx').onclick = async () => {
   if (!signs.length) { setBar(0, 'Load an area first.'); return; }
@@ -320,5 +396,5 @@ $('#btn-xlsx').onclick = async () => {
 };
 // link parameters: ?area=hds opens the test area; &print=1 sets the 11x17 sheet layout (for PDF export tools)
 const Q = new URLSearchParams(location.search);
-if (Q.get('area') === C.TEST.key) run(C.TEST.bbox, C.TEST.name, C.TEST.key).then(() => { if (Q.get('print') === '1') { document.querySelector('link[media=print]').media = 'all'; preparePrint(); } });
+if (Q.get('area') === C.TEST.key) run(C.TEST.bbox, C.TEST.name, C.TEST.key).then(() => { if (Q.get('print') === '1') { preparePrint(); } });
 })();
