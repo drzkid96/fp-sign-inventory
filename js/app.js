@@ -186,19 +186,53 @@ function fromClass(f) {
   else s.status = 'nomatch';
   return s;
 }
-async function pull(bbox) {
-  const [w, so, e, n] = bbox, st = C.CHUNK_DEG, cells = [];
-  for (let x = w; x < e; x += st) for (let y = so; y < n; y += st) cells.push([x, y, Math.min(x+st, e), Math.min(y+st, n)]);
-  const out = new Map(); let done = 0;
-  for (const c of cells) {
-    let url = `https://graph.mapillary.com/map_features?access_token=${C.MLY}&fields=id,object_value,object_type,geometry,aligned_direction,last_seen_at&bbox=${c.map(v => v.toFixed(6)).join(',')}&limit=2000`;
-    while (url) {
-      const d = await getJSON(url);
-      for (const f of d.data || []) if (f.object_type === 'trafficsign' || /^(regulatory|warning|information|complementary)--/.test(f.object_value)) out.set(f.id, f);
-      url = d.paging && d.paging.next;
+// ---- sign tiles (traffic signs only, about 15 KB each) ----
+function decodeSignTile(buf, tx, ty, z) {
+  const rd = (b, i) => { let v = 0, sh = 0, x; do { x = b[i++]; v += (x & 0x7f) * 2 ** sh; sh += 7; } while (x & 0x80); return [v, i]; };
+  const fields = b => { const out = []; let i = 0; while (i < b.length) { let k; [k, i] = rd(b, i); const f = Math.floor(k / 8), w = k & 7;
+      if (w === 0) { let v; [v, i] = rd(b, i); out.push([f, v]); } else if (w === 2) { let l; [l, i] = rd(b, i); out.push([f, b.subarray(i, i + l)]); i += l; }
+      else if (w === 5) { out.push([f, new DataView(b.buffer, b.byteOffset + i, 4).getFloat32(0, true)]); i += 4; }
+      else if (w === 1) { out.push([f, new DataView(b.buffer, b.byteOffset + i, 8).getFloat64(0, true)]); i += 8; } else break; } return out; };
+  const dec = new TextDecoder(), res = [];
+  for (const [f, lay] of fields(buf)) {
+    if (f !== 3) continue;
+    const lf = fields(lay), keys = [], vals = []; let ext = 4096; const feats = [];
+    for (const [k, v] of lf) {
+      if (k === 3) keys.push(dec.decode(v));
+      else if (k === 4) { const vf = fields(v)[0]; vals.push(vf[0] === 1 ? dec.decode(vf[1]) : vf[1]); }
+      else if (k === 5) ext = v;
+      else if (k === 2) feats.push(v);
     }
-    done++; setBar(0.1 + 0.7 * done / cells.length, `Loading signs: block ${done} of ${cells.length}, ${out.size} found`);
+    for (const fb of feats) {
+      const ff = fields(fb), props = {}; let geo = null, tags = null;
+      for (const [k, v] of ff) { if (k === 2) tags = v; if (k === 4) geo = v; }
+      if (tags) { const t = []; let i = 0; while (i < tags.length) { let x; [x, i] = rd(tags, i); t.push(x); } for (let j = 0; j < t.length; j += 2) props[keys[t[j]]] = vals[t[j + 1]]; }
+      if (!geo) continue;
+      const g = []; let i = 0; while (i < geo.length) { let x; [x, i] = rd(geo, i); g.push(x); }
+      const px = (g[1] >> 1) ^ -(g[1] & 1), py = (g[2] >> 1) ^ -(g[2] & 1);
+      const n = 2 ** z, X = tx + px / ext, Y = ty + py / ext;
+      const lon = X / n * 360 - 180, lat = Math.atan(Math.sinh(Math.PI * (1 - 2 * Y / n))) * 180 / Math.PI;
+      res.push({id: String(props.id), object_value: props.value, geometry: {coordinates: [lon, lat]}, last_seen_at: props.last_seen_at});
+    }
   }
+  return res;
+}
+async function pull(bbox) {
+  const [w, so, e, n] = bbox, z = 14, N = 2 ** z;
+  const tx = lon => Math.floor((lon + 180) / 360 * N);
+  const ty = lat => Math.floor((1 - Math.asinh(Math.tan(lat * Math.PI / 180)) / Math.PI) / 2 * N);
+  const tiles = [];
+  for (let x = tx(w); x <= tx(e); x++) for (let y = ty(n); y <= ty(so); y++) tiles.push([x, y]);
+  const out = new Map(); let done = 0;
+  await Promise.all(tiles.map(async ([x, y]) => {
+    const r = await fetch(`https://tiles.mapillary.com/maps/vtp/mly_map_feature_traffic_sign/2/${z}/${x}/${y}?access_token=${C.MLY}`);
+    if (!r.ok) throw new Error('sign tile ' + r.status);
+    for (const f of decodeSignTile(new Uint8Array(await r.arrayBuffer()), x, y, z)) {
+      const [lon, lat] = f.geometry.coordinates;
+      if (lon >= w && lon <= e && lat >= so && lat <= n) out.set(f.id, f);
+    }
+    done++; setBar(0.1 + 0.7 * done / tiles.length, `Loading signs: tile ${done} of ${tiles.length}, ${out.size} found`);
+  }));
   return [...out.values()];
 }
 async function run(bbox, name, verifiedKey) {
