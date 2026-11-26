@@ -19,6 +19,7 @@ TOKEN = os.environ.get('MLY_TOKEN') or CFG.split("MLY: '")[1].split("'")[0]
 LON0, LAT0 = BBOX[0], BBOX[1]; K = math.cos(math.radians((BBOX[1] + BBOX[3]) / 2)) * 111320; KL = 110540
 xy = lambda lo, la: ((lo - LON0) * K, (la - LAT0) * KL)
 log = lambda *a: print(time.strftime('%H:%M:%S'), *a, flush=True)
+HIGH = 0.8  # mean model probability over the views of a sign; set so the confident share matches the held-out test (about 96% correct)
 SIGN = ('object--traffic-sign', 'regulatory--', 'warning--', 'information--', 'complementary--', 'object--sign--information')
 
 def get(url, **p):
@@ -268,7 +269,7 @@ if __name__ == '__main__':
         c = cv2.imread(f"dc/{s['best']}.jpg"); cv2.imwrite(os.path.join(REPO, 'data', 'areas', KEY, 'crops', s['id'] + '.jpg'), c, [cv2.IMWRITE_JPEG_QUALITY, 85])
         code = 'R2-1' if s['code'] == 'R2-1/35' else ('' if s['code'].startswith('NC-') else s['code'])
         site.append(dict(id=s['id'], lat=s['lat'], lon=s['lon'], code=code, val='35' if s['code'] == 'R2-1/35' else '',
-                         status='verified' if s['conf'] >= 0.6 else 'review', conf=s['conf'], dir=round(s['face']), loc=s['loc'],
+                         status='verified' if s['conf'] >= HIGH else 'review', conf=s['conf'], dir=round(s['face']), loc=s['loc'],
                          seen=str(max(s['years'])), years=s['years'], views=s['nviews'], img=s['best_img'], crop=s['id'] + '.jpg',
                          cls={'NC-PARK': 'Parking sign (no standard code)', 'NC-WARN': 'Warning sign (no standard code)', 'NC-ID': 'Community ID sign'}.get(s['code'], '')))
     names = [dict(lat=s['lat'], lon=s['lon'], kind=s['code'], loc=s['loc'], seen=str(max(s['years']))) for s in S if s['code'] in ('STREET', 'GUIDE')]

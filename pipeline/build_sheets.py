@@ -115,7 +115,7 @@ for fr in F:
         if pick is None: pick=(cands[0][0],cands[0][1]) if cands else (px+0.1,py+0.1)
         cx,cy=pick; occ.append((cx,cy,cx+BW,cy+BH)); s['_cb']=(cx,cy)
     for s,(px,py) in zip(sh,poles):
-        cx,cy=s['_cb']; col=JADE if s['conf']>=0.6 else ORG
+        cx,cy=s['_cb']; col=JADE if s['conf']>=0.8 else ORG
         # leader
         tx=min(max(px,cx),cx+BW); ty=min(max(py,cy),cy+BH)
         c.setStrokeColorRGB(*SLATE);c.setLineWidth(0.6);c.line((MX+px)*inch,(MY+py)*inch,(MX+tx)*inch,(MY+ty)*inch)
@@ -156,7 +156,7 @@ for fr in F:
         while c.stringWidth(loc,'AS',fs)>1.52*inch: loc=loc[:-2]
         text(tx0+1.46,mid-0.022,loc,'AS',fs)
         yr=max(s['years']); text(tx0+3.06,mid-0.022,str(yr),'ASM',fs,ORG if yr<2024 else SLATE)
-        c.setFillColorRGB(*(JADE if s['conf']>=0.6 else ORG)); c.circle((tx0+3.38)*inch,mid*inch,2.6,stroke=0,fill=1)
+        c.setFillColorRGB(*(JADE if s['conf']>=0.8 else ORG)); c.circle((tx0+3.38)*inch,mid*inch,2.6,stroke=0,fill=1)
     c.setStrokeColorRGB(*CREAM);c.setLineWidth(1.5);c.line(tx0*inch,y*inch,(tx0+tw)*inch,y*inch)
     # ---- bottom band
     by=0.35
