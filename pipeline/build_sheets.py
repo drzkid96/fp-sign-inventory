@@ -55,6 +55,7 @@ for w in O:
             a=p+(q-p)*t/n; b=p+(q-p)*(t+1)/n
             if not Iall.query_ball_point((a+b)/2,12): nophoto.append((a,b))
 streets=[(w['tags']['name'],[np.array(xy(p['lon'],p['lat'])) for p in w['geometry']]) for w in O if w['type']=='way' and w.get('tags',{}).get('name') and w['tags'].get('highway') not in('service','footway',None)]
+import reportlab.rl_config as rlc; rlc.canvas_basefontname='AS'
 M=0.35; MX,MY=M,1.95
 c=canvas.Canvas(sys.argv[1] if len(sys.argv)>1 else 'sheets.pdf',pagesize=(17*inch,11*inch))
 c.setTitle('Sign Inventory - '+AREA.title()); c.setAuthor('Fehr & Peers')
@@ -174,6 +175,7 @@ for fr in F:
     allp=np.vstack([cl]+[np.array([[f['c'][0],f['c'][1]]]) for f in F]); x0,y0=allp.min(0)-120; x1,y1=allp.max(0)+120
     sc=min(kw/(x1-x0),kh/(y1-y0)); ox=kx+(kw-(x1-x0)*sc)/2; oy=ky+(kh-(y1-y0)*sc)/2
     K_=lambda x,y:((ox+(x-x0)*sc)*inch,(oy+(y-y0)*sc)*inch)
+    c.saveState(); kp=c.beginPath(); kp.rect(kx*inch,ky*inch,kw*inch,kh*inch); c.clipPath(kp,stroke=0)
     c.setStrokeColorRGB(0.75,0.77,0.78);c.setLineWidth(0.4)
     for nm,g in streets:
         for a,b in zip(g[:-1],g[1:]):
@@ -190,6 +192,7 @@ for fr in F:
         c.drawPath(pth,stroke=1,fill=1 if cur else 0);c.setFillAlpha(1)
     c.setStrokeColorRGB(*SLATE);c.setLineWidth(1.4)
     for a,b in zip(cl[:-1],cl[1:]): c.line(*K_(*a),*K_(*b))
+    c.restoreState()
     text(kx+0.06,ky+kh-0.14,'KEY MAP','ASB',6.5)
     # scale bar
     sx0,sy0=9.4,0.62; L=40/SCALE
