@@ -282,7 +282,7 @@ if __name__ == '__main__':
             if s['code'] == 'R2-1/35': s['code'] = 'R2-1'
     corridor = REQ.get('corridor') or collections.Counter(s['street'] for s in S if s['code'] not in ('STREET', 'GUIDE')).most_common(1)[0][0]
     full = next((w['tags']['name'] for w in O if w['type'] == 'way' and short(w['tags'].get('name', '')) == corridor), corridor)
-    sys.path.insert(0, HERE); import sheets_geo; sheets_geo.setup(BBOX)
+    sys.path.insert(0, HERE); import sheets_geo; sheets_geo.setup(BBOX, REQ.get('scale') or (80 if REQ.get('layout') == 'grid' else 40))
     if REQ.get('layout') == 'grid':
         cl = np.zeros((0, 2)); F = sheets_geo.frames_grid([s for s in S if s['code'] not in ('STREET', 'GUIDE', 'X')], BBOX)
     else:
@@ -291,7 +291,8 @@ if __name__ == '__main__':
     date = datetime.date.today().isoformat()
     os.makedirs(os.path.join(REPO, 'data', 'areas', KEY, 'crops'), exist_ok=True)
     pdf = os.path.join(REPO, 'data', 'areas', KEY, f'{date}_SIGN-INVENTORY_{KEY.upper()}.pdf')
-    env = dict(os.environ, REPO=REPO, AREA=AREA, BBOX=json.dumps(BBOX), DATE=date)
+    scale = REQ.get('scale') or (80 if REQ.get('layout') == 'grid' else 40); sheets_geo.setup(BBOX, scale)
+    env = dict(os.environ, REPO=REPO, AREA=AREA, BBOX=json.dumps(BBOX), DATE=date, SCALE=str(scale))
     subprocess.run([sys.executable, os.path.join(HERE, 'build_sheets.py'), pdf], check=True, env=env, cwd=W)
     Sf = json.load(open('signs_final.json'))
     site = []

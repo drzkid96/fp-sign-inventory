@@ -2,8 +2,9 @@ import json,math,numpy as np,os,io,requests,cv2,time
 TILEFAIL=[]
 from concurrent.futures import ThreadPoolExecutor
 LON0,LAT0=-118.1945,34.0780;K=math.cos(math.radians(34.083))*111320;KL=110540
-def setup(bbox):
-    global LON0,LAT0,K
+def setup(bbox,scale=None):
+    global LON0,LAT0,K,SCALE
+    if scale: SCALE=scale
     LON0,LAT0=bbox[0],bbox[1];K=math.cos(math.radians((bbox[1]+bbox[3])/2))*111320
 xy=lambda lo,la:((lo-LON0)*K,(la-LAT0)*KL)
 ll=lambda x,y:(LON0+x/K,LAT0+y/KL)

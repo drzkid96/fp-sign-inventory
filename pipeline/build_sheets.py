@@ -1,7 +1,7 @@
 import json,math,numpy as np,cv2,os,sys,io,collections
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 import sheets_geo
-REPO=os.environ['REPO'];AREA=os.environ['AREA'];sheets_geo.setup(json.loads(os.environ['BBOX']));DATE=os.environ.get('DATE','')
+REPO=os.environ['REPO'];AREA=os.environ['AREA'];sheets_geo.setup(json.loads(os.environ['BBOX']),int(os.environ.get('SCALE','40')));DATE=os.environ.get('DATE','')
 from sheets_geo import *
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
@@ -197,10 +197,10 @@ for fr in F:
     c.restoreState()
     text(kx+0.06,ky+kh-0.14,'KEY MAP','ASB',6.5)
     # scale bar
-    sx0,sy0=9.4,0.62; L=40/SCALE
+    sx0,sy0=9.4,0.62; L=1.0
     for i in range(4):
         c.setFillColorRGB(*(SLATE if i%2==0 else (1,1,1)));c.setStrokeColorRGB(*SLATE);c.setLineWidth(0.6);c.rect((sx0+i*L/2)*inch,sy0*inch,L/2*inch,0.07*inch,stroke=1,fill=1)
-    for i,v in enumerate((0,20,40,60,80)): text(sx0+i*L/2,sy0+0.12,str(v),'AS',6,anchor='c')
+    for i in range(5): text(sx0+i*L/2,sy0+0.12,str(int(i*SCALE/2)),'AS',6,anchor='c')
     text(sx0+2*L+0.12,sy0+0.0,'FEET','AS',6); text(sx0,sy0-0.17,f'SCALE: 1" = {SCALE}\' (11x17)','ASM',6.5)
     # title block
     tbx=12.55; c.setStrokeColorRGB(*SLATE);c.setLineWidth(0.8);c.line(tbx*inch,0.35*inch,tbx*inch,1.75*inch)
