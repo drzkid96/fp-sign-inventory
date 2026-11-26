@@ -54,16 +54,47 @@ function icon(s) {
   return L.divIcon({className:'', iconSize:[28,28], iconAnchor:[14,14],
     html:`<div class="sg st-${s.status}">${dir}<div class="ico">${pic}</div><div class="lab">${esc(lab)}</div></div>`});
 }
+const PRI = {verified:0, auto:1, nomatch:2, unreadable:3};
+function poleIcon(g) {
+  const show = g.slice(0, 4);
+  const icos = show.map(s => `<div class="ico st-${s.status}">${s.code && LIB[s.code] ? `<img src="${sprite(s.code)}" alt="">` : '<b>?</b>'}</div>`).join('');
+  const more = g.length > 4 ? `<span class="more">+${g.length - 4}</span>` : '';
+  const lab = g.map(s => s.code ? s.code + (s.val ? ` (${s.val})` : '') : STATUS_TXT[s.status]).filter((v, i, a) => a.indexOf(v) === i).join(' · ');
+  const w = Math.min(g.length, 4) * 28 + (more ? 22 : 0);
+  return L.divIcon({className:'', iconSize:[w, 26], iconAnchor:[13, 13],
+    html:`<div class="pole st-${g[0].status}">${icos}${more}<div class="lab">${esc(lab)}</div></div>`});
+}
+function openSign(s, latlng) {
+  const p = L.popup({maxWidth:300}).setLatLng(latlng || [s.lat, s.lon]).setContent(popup(s)).openOn(map);
+  if (s.status !== 'verified') liveCrop(s);
+  return p;
+}
 function draw() {
   layer.clearLayers();
-  for (const s of signs) {
-    const m = L.marker([s.lat, s.lon], {icon: icon(s), riseOnHover:true});
-    m.bindPopup(() => popup(s), {maxWidth: 300});
-    m.on('popupopen', () => s.status !== 'verified' && liveCrop(s));
-    s.m = m; m.addTo(layer);
+  // group signs whose screen positions fall within 34 px (same pole or same corner)
+  const z = map.getZoom(), R = z >= 19 ? 26 : 34, groupsArr = [];
+  const pts = signs.map(s => ({s, p: map.project([s.lat, s.lon], z)})).sort((a, b) => PRI[a.s.status] - PRI[b.s.status]);
+  for (const o of pts) {
+    const g = groupsArr.find(g => g.p.distanceTo(o.p) < R);
+    if (g) g.list.push(o.s); else groupsArr.push({p: o.p, list: [o.s]});
   }
-  inventory();
+  for (const g of groupsArr) {
+    const ll = map.unproject(g.p, z);
+    if (g.list.length === 1) {
+      const s = g.list[0], m = L.marker(ll, {icon: icon(s), riseOnHover:true});
+      m.on('click', () => openSign(s, ll)); s.m = m; m.addTo(layer); continue;
+    }
+    const m = L.marker(ll, {icon: poleIcon(g.list), riseOnHover:true});
+    m.on('click', () => {
+      const html = '<div class="plist">' + g.list.map((s, i) => `<div data-i="${i}">${s.code && LIB[s.code] ? `<img src="${sprite(s.code)}" alt="">` : '<b>?</b>'}<span><b>${esc(s.code || STATUS_TXT[s.status])}</b>${s.val ? ' (' + esc(s.val) + ')' : ''}</span><i>${STATUS_TXT[s.status]}</i></div>`).join('') + '</div>';
+      const p = L.popup({maxWidth:300}).setLatLng(ll).setContent(html).openOn(map);
+      p.getElement().querySelector('.plist').onclick = e => { const d = e.target.closest('[data-i]'); if (d) openSign(g.list[+d.dataset.i], ll); };
+    });
+    g.list.forEach(s => s.m = m); m.addTo(layer);
+  }
 }
+let lastZ = null;
+map.on('zoomend', () => { if (signs.length && map.getZoom() !== lastZ) { lastZ = map.getZoom(); draw(); } });
 function popup(s) {
   const L0 = LIB[s.code];
   const crop = s.crop ? `<img class="crop" src="data/verified/crops/${s.crop}" alt="">` : `<div class="crop" id="crop-${s.id}" style="height:150px"></div>`;
@@ -121,7 +152,7 @@ function inventory() {
   $('#inv tbody').onclick = e => { const tr = e.target.closest('tr'); if (!tr) return;
     const r = groups().find(x => x.key === tr.dataset.k); if (!r) return;
     const b = L.latLngBounds(r.list.map(s => [s.lat, s.lon])); map.fitBounds(b.pad(0.3), {maxZoom: 19});
-    if (r.list.length === 1) r.list[0].m.openPopup(); };
+    if (r.list.length === 1) setTimeout(() => openSign(r.list[0]), 400); };
 }
 
 // ---------- data ----------
@@ -152,7 +183,7 @@ async function pull(bbox) {
 async function run(bbox, name, verifiedKey) {
   const a = (bbox[2]-bbox[0]) * (bbox[3]-bbox[1]);
   if (a > C.MAX_AREA_DEG2) { setBar(0, 'Area too large. Zoom in to about 6 sq km or less.'); return; }
-  area = bbox; areaName = name; signs = []; layer.clearLayers(); inventory();
+  area = bbox; areaName = name; signs = []; layer.clearLayers(); inventory(); map.closePopup();
   if (areaRect) map.removeLayer(areaRect);
   areaRect = L.rectangle([[bbox[1], bbox[0]], [bbox[3], bbox[2]]], {color:'#FF6622', weight:2, dashArray:'6 5', fill:false, interactive:false}).addTo(map);
   try {
@@ -167,10 +198,9 @@ async function run(bbox, name, verifiedKey) {
     for (const v of (ver.signs || [])) byId.set(v.id, Object.assign(byId.get(v.id) || {}, v));
     signs = [...byId.values()];
     setBar(0.95, 'Drawing map');
-    draw();
+    map.fitBounds(areaRect.getBounds()); lastZ = map.getZoom(); draw(); inventory();
     const cnt = k => signs.filter(s => s.status === k).length;
     setBar(1, `Done. ${signs.length} signs: ${cnt('verified')} verified, ${cnt('auto')} auto, ${cnt('nomatch')} no code, ${cnt('unreadable')} unreadable.`);
-    map.fitBounds(areaRect.getBounds());
   } catch (e) { setBar(0, 'Load failed: ' + e.message + '. Try again.'); console.error(e); }
 }
 const ready = Promise.all([getJSON('data/library.json'), getJSON('data/classmap.json')]).then(([l, c]) => { LIB = l; CLASSMAP = c; });

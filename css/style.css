@@ -41,9 +41,25 @@ td.code{font-weight:600;white-space:nowrap}
 #sheet-side{display:none}
 
 /* map markers */
+.pole{display:flex;align-items:center;gap:2px;position:relative}
+.pole .ico{width:26px;height:26px;background:#fff;border-radius:3px;box-shadow:0 0 0 2px var(--st,var(--jade)),0 1px 3px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;flex:none}
+.pole .ico img{width:22px!important;height:22px!important;object-fit:contain}
+.pole .ico b{font-size:9px;color:var(--orange)}
+.pole .more{font:700 10px 'Albert Sans',sans-serif;background:var(--slate);color:#fff;border-radius:2px;padding:1px 3px}
+.pole .lab{position:absolute;left:0;top:30px;white-space:nowrap;background:var(--slate);color:#fff;font:700 10px 'Albert Sans',sans-serif;padding:1px 4px;border-radius:2px}
+.z-lo .pole .ico{width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 2px #fff,0 0 0 3px var(--slate);background:var(--st,var(--jade))}
+.z-lo .pole .ico img,.z-lo .pole .ico b,.z-lo .pole .more,.z-lo .pole .lab{display:none}
+.z-lo .pole .ico+.ico{display:none}
+.z-mid .pole .lab{display:none}
+.plist{width:260px;font-size:12px}
+.plist div{display:flex;align-items:center;gap:8px;padding:3px 0;border-bottom:1px solid var(--cream);cursor:pointer}
+.plist div:hover{background:var(--pale)}
+.plist img{width:26px;height:26px;object-fit:contain}
+.plist i{margin-left:auto;font-style:normal;font-size:10px;font-weight:700;color:var(--jade)}
+
 .sg{position:relative}
 .sg .ico{width:28px;height:28px;background:var(--white);border-radius:3px;box-shadow:0 0 0 2px var(--st,var(--jade)),0 1px 3px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
-.sg .ico img{max-width:24px;max-height:24px}
+.sg .ico img{width:24px!important;height:24px!important;object-fit:contain}
 .sg .ico b{font-size:9px;color:var(--orange)}
 .sg .lab{position:absolute;left:32px;top:6px;white-space:nowrap;background:var(--slate);color:var(--white);font:700 10px 'Albert Sans',sans-serif;padding:1px 4px;border-radius:2px}
 .sg .dir{position:absolute;left:14px;top:14px;width:0;height:0;transform-origin:0 0}
