@@ -27,9 +27,19 @@ for s in S:
 S.sort(key=lambda s:(s['sheet'],s['sta'],-s['y']))
 for i,s in enumerate(S): s['id']=f'S-{i+1:03d}'
 F=[f for f in F if any(s['sheet']==f['i'] for s in S)]
+import intersections as IXM
+_bb=json.loads(os.environ['BBOX']); _x1,_y1=xy(_bb[2],_bb[3])
+IX=IXM.check(O,S,[xy(*a['computed_geometry']['coordinates']) for a in A],xy,(0,0,_x1,_y1))
+json.dump(IX,open('intersections.json','w'))
 for k,f in enumerate(F): f['n']=k+1
+def speed_face(v):
+    f=f'r2-1-{v}.png'
+    if not os.path.exists(f):
+        r=Image.open(SPR+'r2-1.webp').convert('RGBA');W_,H_=r.size;d=ImageDraw.Draw(r);d.rectangle((W_*0.12,H_*0.52,W_*0.88,H_*0.92),fill='white')
+        d.text((W_/2,H_*0.72),v,font=ImageFont.truetype(FD+'AlbertSans-Bold.ttf',int(H_*0.4)),fill='black',anchor='mm');r.save(f)
+    return f
 def face_img(code):
-    if code=='R2-1/35': return 'r2-1-35.png'
+    if code.startswith('R2-1/'): return speed_face(code.split('/')[1])
     if code=='R2-1': return SPR+'r2-1.webp'
     if code in NC: return None
     return SPR+lib[code]['s']+'.webp'
@@ -42,8 +52,8 @@ def ir(path):
     if path not in IMGC:
         im=Image.open(path).convert('RGBA'); bg=Image.new('RGBA',im.size,(255,255,255,0)); IMGC[path]=ImageReader(im)
     return IMGC[path]
-def name(code): return NC.get(code) or ('Speed Limit' if code=='R2-1' else None) or lib.get(code.split('/')[0],{}).get('n','') or code
-def disp(code): return 'R2-1 (35)' if code=='R2-1/35' else ('NO CODE' if code in NC else code)
+def name(code): return NC.get(code) or ('Speed Limit' if code.startswith('R2-1') else None) or lib.get(code.split('/')[0],{}).get('n','') or code
+def disp(code): return f"R2-1 ({code.split('/')[1]})" if code.startswith('R2-1/') else ('NO CODE' if code in NC else code)
 # coverage (photos within 12 m)
 Iall=cKDTree([xy(*a['computed_geometry']['coordinates']) for a in A])
 nophoto=[]
@@ -95,6 +105,10 @@ for fr in F:
         c.setFillColorRGB(1,1,1); c.setFillAlpha(0.85); c.roundRect(-w/2-3,-3.5,w+6,11,2,stroke=0,fill=1); c.setFillAlpha(1)
         c.setFillColorRGB(*SLATE); c.drawCentredString(0,-0.5,lab); c.restoreState(); done.add(nm)
         hw=(w/72+0.1)/2; occ.append((p[0]-hw*abs(math.cos(math.radians(ang)))-0.08,p[1]-hw*abs(math.sin(math.radians(ang)))-0.08,p[0]+hw*abs(math.cos(math.radians(ang)))+0.08,p[1]+hw*abs(math.sin(math.radians(ang)))+0.08))
+    IXP=[]
+    for ix in IX:
+        px_,py_=P(ix['x'],ix['y'])
+        if 0.3<px_<MAPW-0.3 and 0.3<py_<MAPH-0.3: IXP.append((ix,px_,py_)); occ.append((px_-0.16,py_-0.16,px_+0.16,py_+0.16))
     # signs: poles, facing arrows, callouts
     poles=[]; occ.append((MAPW-0.8,MAPH-0.85,MAPW,MAPH))
     for s in sh: poles.append(P(s['x'],s['y']))
@@ -132,6 +146,11 @@ for fr in F:
         fi=face_img(s['code'])
         if fi: c.drawImage(ir(fi),(MX+cx+0.025)*inch,(MY+cy+0.025)*inch,0.22*inch,0.22*inch,mask='auto',preserveAspectRatio=True,anchor='c')
         text(MX+cx+0.27,MY+cy+0.155,s['id'],'ASB',6.3); text(MX+cx+0.27,MY+cy+0.05,disp(s['code']),'ASM',6.0)
+    for ix,px_,py_ in IXP:
+        worst=[a_['status'] for a_ in ix['approaches']]
+        col=ORG if any(w_ not in('OK','NO PHOTOS') for w_ in worst) else ((0.55,0.58,0.6) if all(w_=='NO PHOTOS' for w_ in worst) else JADE)
+        c.setStrokeColorRGB(*col);c.setLineWidth(1.6);c.setFillColorRGB(1,1,1);c.circle((MX+px_)*inch,(MY+py_)*inch,0.13*inch,stroke=1,fill=1)
+        text(MX+px_,MY+py_-0.03,ix['id'][2:].lstrip('0'),'ASB',6.5,col,'c')
     c.restoreState()
     c.setStrokeColorRGB(*SLATE);c.setLineWidth(0.8);c.rect(MX*inch,MY*inch,MAPW*inch,MAPH*inch)
     # north arrow on map
@@ -167,9 +186,11 @@ for fr in F:
     c.setStrokeColorRGB(*EMER);c.setLineWidth(1.3);c.line((lx+0.08)*inch,1.38*inch,(lx+0.24)*inch,1.38*inch)
     text(lx+0.36,1.35,'Sign post, arrow shows the way the sign faces','AS',6.8)
     for i,(col,lab) in enumerate([(JADE,'Code read with high confidence'),(ORG,'Low confidence, check in field')]):
-        c.setFillColorRGB(1,1,1);c.setStrokeColorRGB(*col);c.setLineWidth(1.2);c.roundRect((lx+0.02)*inch,(1.10-i*0.22)*inch,0.26*inch,0.14*inch,2,stroke=1,fill=1);text(lx+0.36,1.12-i*0.22,lab,'AS',6.8)
-    c.setStrokeColorRGB(*ORG);c.setLineWidth(2.2);c.setDash(5,3);c.line((lx+0.0)*inch,0.73*inch,(lx+0.3)*inch,0.73*inch);c.setDash();text(lx+0.36,0.70,'Street with no street-level photos (not inventoried)','AS',6.8)
-    text(lx+0.36,0.48,'Photo year in orange: newest photo is before 2024','AS',6.8,ORG)
+        c.setFillColorRGB(1,1,1);c.setStrokeColorRGB(*col);c.setLineWidth(1.2);c.roundRect((lx+0.02)*inch,(1.14-i*0.19)*inch,0.26*inch,0.13*inch,2,stroke=1,fill=1);text(lx+0.36,1.16-i*0.19,lab,'AS',6.8)
+    c.setStrokeColorRGB(*ORG);c.setLineWidth(2.2);c.setDash(5,3);c.line((lx+0.0)*inch,0.81*inch,(lx+0.3)*inch,0.81*inch);c.setDash();text(lx+0.36,0.78,'Street with no street-level photos (not inventoried)','AS',6.8)
+    c.setStrokeColorRGB(*JADE);c.setLineWidth(1.6);c.setFillColorRGB(1,1,1);c.circle((lx+0.15)*inch,0.62*inch,0.09*inch,stroke=1,fill=1);text(lx+0.15,0.595,'7','ASB',5.5,JADE,'c')
+    text(lx+0.36,0.595,'Intersection checked against OpenStreetMap (green OK, orange check)','AS',6.8)
+    text(lx+0.36,0.42,'Photo year in orange: newest photo is before 2024','AS',6.8,ORG)
     # key map
     kx,ky,kw,kh=4.2,0.35,4.6,1.35
     c.setStrokeColorRGB(*CREAM);c.setLineWidth(0.8);c.rect(kx*inch,ky*inch,kw*inch,kh*inch)
@@ -211,6 +232,33 @@ for fr in F:
     for k_,ln in enumerate(['Sources: street-level photos, Mapillary (CC BY-SA); aerial, Esri;','streets, OpenStreetMap. Signs located from several photos; codes','per CA MUTCD 2026, read by a trained sign model.']): text(tbx+0.2,0.60-k_*0.1,ln,'AS',5.6,(0.33,0.4,0.42))
     c.setFillColorRGB(*SLATE);c.rect(15.85*inch,0.35*inch,0.8*inch,0.55*inch,stroke=0,fill=1)
     text(16.25,0.67,'SHEET','ASM',6,(1,1,1),'c'); text(16.25,0.44,f"{fr['n']} of {NS}",'ASB',9,(1,1,1),'c')
+    c.showPage()
+# ---- intersection check pages
+rows=[(ix,a_) for ix in IX for a_ in ix['approaches']]
+STC={'OK':JADE,'NO PHOTOS':(0.45,0.5,0.52)}
+per=38; npg=max(1,(len(rows)+per-1)//per)
+for pg in range(npg):
+    text(0.5,10.35,'INTERSECTION CHECK','ASS',16); text(0.5,10.08,f'{AREA}  |  each approach: OpenStreetMap control against the signs found in the photos','AS',8.5,(0.33,0.4,0.42))
+    cols=[('INT.',0.55),('INTERSECTION',3.6),('APPROACH',2.3),('OSM CONTROL',1.3),('SIGNS FOUND ON APPROACH',4.2),('PHOTOS',0.8),('STATUS',1.6),('SIGN IDS',1.65)]
+    x0=0.5; y=9.75; c.setFillColorRGB(*EMER); c.rect(x0*inch,(y-0.26)*inch,16*inch,0.26*inch,stroke=0,fill=1); xx=x0
+    for h,w in cols: text(xx+0.06,y-0.175,h,'ASB',7,(1,1,1)); xx+=w
+    y-=0.26; prev=None
+    for k,(ix,a_) in enumerate(rows[pg*per:(pg+1)*per]):
+        y-=0.215
+        if k%2: c.setFillColorRGB(*BAND); c.rect(x0*inch,y*inch,16*inch,0.215*inch,stroke=0,fill=1)
+        m=y+0.075; xx=x0; first=ix['id']!=prev; prev=ix['id']
+        vals=[(ix['id'] if first else '','ASB'),(ix['name'] if first else '','AS'),(f"{a_['dir']} {a_['street']}",'AS'),(a_['control'].upper(),'AS'),(', '.join(a_['codes']) or '-','AS'),('YES' if a_['photos'] else 'NO','AS'),(a_['status'],'ASB'),(', '.join(a_['signs'][:4])+(' +' if len(a_['signs'])>4 else ''),'AS')]
+        for (v,f),(h,w) in zip(vals,cols):
+            while c.stringWidth(v,f,7)>(w-0.12)*inch: v=v[:-2]
+            col=STC.get(v,ORG) if h=='STATUS' else SLATE
+            text(xx+0.06,m,v,f,7,col); xx+=w
+    c.setStrokeColorRGB(*CREAM);c.setLineWidth(1.5);c.line(x0*inch,y*inch,(x0+16)*inch,y*inch)
+    tot=collections.Counter(a_['status'] for _,a_ in rows)
+    text(0.5,0.75,'  |  '.join(f'{k}: {v}' for k,v in tot.most_common()),'ASM',8)
+    text(0.5,0.55,'OSM control comes from OpenStreetMap traffic signal and stop tags. STOP NOT SEEN: the approach has photos but no stop sign was read; confirm in field. NO PHOTOS: approach cannot be checked.','AS',7,(0.33,0.4,0.42))
+    c.drawImage(REPO+'/img/wordmark-slate.png',13.6*inch,0.45*inch,1.3*inch,0.25*inch,mask='auto',preserveAspectRatio=True,anchor='w')
+    c.setFillColorRGB(*SLATE);c.rect(15.85*inch,0.35*inch,0.8*inch,0.55*inch,stroke=0,fill=1)
+    text(16.25,0.67,'CHECK','ASM',6,(1,1,1),'c'); text(16.25,0.44,f"{pg+1} of {npg}",'ASB',9,(1,1,1),'c')
     c.showPage()
 c.save(); json.dump(S,open('signs_final.json','w'),default=float)
 print('sheets',collections.Counter(s['sheet'] for s in S))

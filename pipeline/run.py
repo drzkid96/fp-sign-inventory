@@ -19,7 +19,7 @@ TOKEN = os.environ.get('MLY_TOKEN') or CFG.split("MLY: '")[1].split("'")[0]
 LON0, LAT0 = BBOX[0], BBOX[1]; K = math.cos(math.radians((BBOX[1] + BBOX[3]) / 2)) * 111320; KL = 110540
 xy = lambda lo, la: ((lo - LON0) * K, (la - LAT0) * KL)
 log = lambda *a: print(time.strftime('%H:%M:%S'), *a, flush=True)
-HIGH = 0.8  # mean model probability over the views of a sign; set so the confident share matches the held-out test (about 96% correct)
+HIGH = 0.7  # mean model probability over the views of a sign; on held-out Culver City signs every sign at or above this was read right
 SIGN = ('object--traffic-sign', 'regulatory--', 'warning--', 'information--', 'complementary--', 'object--sign--information')
 
 UA = {'User-Agent': 'fp-sign-inventory/1.0 (+https://github.com/drzkid96/fp-sign-inventory)'}
@@ -189,18 +189,18 @@ def group(R, P, CL):
         best = max(mem, key=lambda m: (m['t'] > 1.7e12, min(m['wpx'], m['hpx'])))
         res.append(dict(code=s['code'], x=s['x'], y=s['y'], lon=LON0 + s['x'] / K, lat=LAT0 + s['y'] / KL, h=s['h'], face=face,
                         conf=round(float(np.mean([P[m['i']][ci] for m in mem])), 3), nviews=len(mem), years=sorted(set(time.gmtime(m['t'] / 1000).tm_year for m in mem)),
-                        best=best['id'], best_img=best['img']))
+                        best=best['id'], best_img=best['img'], members=[m['id'] for m in mem]))
     # same sign seen in several photo years
     res.sort(key=lambda s: (-max(s['years']), -s['nviews'])); out = []
     for s in res:
         d = next((o for o in out if o['code'] == s['code'] and math.hypot(o['x'] - s['x'], o['y'] - s['y']) < 5 and adiff(o['face'], s['face']) < 60), None)
-        if d: d['years'] = sorted(set(d['years']) | set(s['years'])); d['nviews'] += s['nviews']; d['conf'] = max(d['conf'], s['conf'])
+        if d: d['years'] = sorted(set(d['years']) | set(s['years'])); d['nviews'] += s['nviews']; d['conf'] = max(d['conf'], s['conf']); d['members'] += s['members']
         else: out.append(s)
     new = [o for o in out if max(o['years']) >= 2024]; keep = []
     for o in out:
         if max(o['years']) < 2024:
             d = min([n for n in new if n['code'] == o['code'] and adiff(n['face'], o['face']) < 70], key=lambda n: math.hypot(n['x'] - o['x'], n['y'] - o['y']), default=None)
-            if d and math.hypot(d['x'] - o['x'], d['y'] - o['y']) < 12: d['years'] = sorted(set(d['years']) | set(o['years'])); d['nviews'] += o['nviews']; continue
+            if d and math.hypot(d['x'] - o['x'], d['y'] - o['y']) < 12: d['years'] = sorted(set(d['years']) | set(o['years'])); d['nviews'] += o['nviews']; d['members'] += o['members']; continue
         keep.append(o)
     return keep
 
@@ -277,9 +277,6 @@ if __name__ == '__main__':
     S = group(R, P, CL); log('signs', len(S))
     O = osm(); S = approach(S, O); cov = coverage(A, O); log('street length with photos', cov, '%')
     json.dump(S, open('signs3.json', 'w'))
-    if not REQ.get('speed_35'):  # the model knows the 35 mph face only; elsewhere report the code without a value
-        for s in S:
-            if s['code'] == 'R2-1/35': s['code'] = 'R2-1'
     corridor = REQ.get('corridor') or collections.Counter(s['street'] for s in S if s['code'] not in ('STREET', 'GUIDE')).most_common(1)[0][0]
     full = next((w['tags']['name'] for w in O if w['type'] == 'way' and short(w['tags'].get('name', '')) == corridor), corridor)
     sys.path.insert(0, HERE); import sheets_geo; sheets_geo.setup(BBOX, REQ.get('scale') or (80 if REQ.get('layout') == 'grid' else 40))
@@ -294,17 +291,18 @@ if __name__ == '__main__':
     scale = REQ.get('scale') or (80 if REQ.get('layout') == 'grid' else 40); sheets_geo.setup(BBOX, scale)
     env = dict(os.environ, REPO=REPO, AREA=AREA, BBOX=json.dumps(BBOX), DATE=date, SCALE=str(scale))
     subprocess.run([sys.executable, os.path.join(HERE, 'build_sheets.py'), pdf], check=True, env=env, cwd=W)
-    Sf = json.load(open('signs_final.json'))
+    Sf = json.load(open('signs_final.json')); IXR = json.load(open('intersections.json'))
+    for i in IXR: i['lon'], i['lat'] = LON0 + i['x'] / K, LAT0 + i['y'] / KL
     site = []
     for s in Sf:
         c = cv2.imread(f"dc/{s['best']}.jpg"); cv2.imwrite(os.path.join(REPO, 'data', 'areas', KEY, 'crops', s['id'] + '.jpg'), c, [cv2.IMWRITE_JPEG_QUALITY, 85])
-        code = 'R2-1' if s['code'] in ('R2-1/35', 'R2-1') else ('' if s['code'].startswith('NC-') else s['code'])
-        site.append(dict(id=s['id'], lat=s['lat'], lon=s['lon'], code=code, val='35' if s['code'] == 'R2-1/35' else '',
+        code = s['code'].split('/')[0] if s['code'].startswith('R2-1') else ('' if s['code'].startswith('NC-') else s['code'])
+        site.append(dict(id=s['id'], lat=s['lat'], lon=s['lon'], code=code, val=s['code'].split('/')[1] if s['code'].startswith('R2-1/') else '',
                          status='verified' if s['conf'] >= HIGH else 'review', conf=s['conf'], dir=round(s['face']), loc=s['loc'],
                          seen=str(max(s['years'])), years=s['years'], views=s['nviews'], img=s['best_img'], crop=s['id'] + '.jpg',
                          cls={'NC-PARK': 'Parking sign (no standard code)', 'NC-WARN': 'Warning sign (no standard code)', 'NC-ID': 'Community ID sign'}.get(s['code'], '')))
     names = [dict(lat=s['lat'], lon=s['lon'], kind=s['code'], loc=s['loc'], seen=str(max(s['years']))) for s in S if s['code'] in ('STREET', 'GUIDE')]
     json.dump(dict(key=KEY, area=AREA, bbox=BBOX, date=date, coverage=cov, sheets=os.path.basename(pdf), complete=True,
                    method='Found by scanning street-level photos, placed by crossing sight lines from several photos, codes read by a trained sign model (no manual reads).',
-                   signs=site, name_signs=names), open(os.path.join(REPO, 'data', 'areas', KEY, 'signs.json'), 'w'))
+                   signs=site, name_signs=names, intersections=IXR), open(os.path.join(REPO, 'data', 'areas', KEY, 'signs.json'), 'w'))
     log('done', len(site), 'signs,', len(names), 'street name or guide signs, sheets', os.path.basename(pdf))
