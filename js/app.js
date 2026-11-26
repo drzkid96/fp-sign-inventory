@@ -84,12 +84,12 @@ function openSign(s, latlng) {
   return p;
 }
 // group signs whose screen positions fall close together (same pole or same corner)
-function groupAt(z) {
-  const R = z >= 20 ? 30 : z >= 19 ? 46 : 64, out = [];
+function groupAt(z, R0, IW = 28) {
+  const R = R0 || (z >= 20 ? 30 : z >= 19 ? 46 : 64), out = [];
   const pts = signs.map(s => ({s, p: map.project([s.lat, s.lon], z)})).sort((a, b) => PRI[a.s.status] - PRI[b.s.status]);
   for (const o of pts) { const g = out.find(g => g.p.distanceTo(o.p) < R); if (g) g.list.push(o.s); else out.push({p: o.p, list: [o.s]}); }
   // merge groups whose icon rows would overlap (each icon 28 px wide, up to 4 plus a count chip)
-  const box = g => { const w = Math.min(g.list.length, 4) * 28 + (g.list.length > 4 ? 24 : 0); return [g.p.x - 16, g.p.y - 16, g.p.x - 16 + w + 4, g.p.y + 16]; };
+  const box = g => { const w = Math.min(g.list.length, 4) * IW + (g.list.length > 4 ? 24 : 0), h = IW / 2 + 2; return [g.p.x - h, g.p.y - h, g.p.x - h + w + 4, g.p.y + h]; };
   const hit = (a, b) => !(a[2] < b[0] || a[0] > b[2] || a[3] < b[1] || a[1] > b[3]);
   for (let again = true; again;) { again = false;
     for (let i = 0; i < out.length && !again; i++) for (let j = i + 1; j < out.length; j++)
@@ -114,23 +114,23 @@ async function renderPrintMap(Wc, Hc) {
   g.save(); g.setLineDash([7, 5]); g.strokeStyle = '#FF6622'; g.lineWidth = 2; g.strokeRect(a[0], a[1], b[0] - a[0], b[1] - a[1]); g.restore();
   // signs
   const cols = {verified:'#1B795A', auto:'#568CBB', nomatch:'#FF6622', unreadable:'#8a8f91'};
-  const groups = groupAt(z), keys = [...new Set(signs.filter(s => s.code).map(pic))];
+  const groups = groupAt(z, 20, 20), keys = [...new Set(signs.filter(s => s.code).map(pic))];
   const spr = {}; (await Promise.all(keys.map(k => loadImg(k)))).forEach((im, i) => spr[keys[i]] = im);
   const boxes = [], labels = [];
   g.font = "700 10px 'Albert Sans'"; g.textBaseline = 'middle';
   for (const gr of groups) {
     const [x, y] = [gr.p.x - ox, gr.p.y - oy], show = gr.list.slice(0, 4);
     show.forEach((sg, i) => {
-      const bx = x - 13 + i * 28, by = y - 13;
-      g.fillStyle = '#fff'; g.strokeStyle = cols[sg.status]; g.lineWidth = 2.5;
-      g.beginPath(); g.roundRect(bx, by, 26, 26, 3); g.fill(); g.stroke();
-      if (sg.code && spr[pic(sg)]) { const im = spr[pic(sg)], k = Math.min(22 / im.width, 22 / im.height); g.drawImage(im, bx + 13 - im.width * k / 2, by + 13 - im.height * k / 2, im.width * k, im.height * k); }
-      else { g.fillStyle = '#FF6622'; g.fillText('?', bx + 10, by + 13); }
-      boxes.push([bx - 2, by - 2, bx + 28, by + 28]);
+      const bx = x - 9 + i * 20, by = y - 9;
+      g.fillStyle = '#fff'; g.strokeStyle = cols[sg.status]; g.lineWidth = 2;
+      g.beginPath(); g.roundRect(bx, by, 18, 18, 2); g.fill(); g.stroke();
+      if (sg.code && spr[pic(sg)]) { const im = spr[pic(sg)], k = Math.min(15 / im.width, 15 / im.height); g.drawImage(im, bx + 9 - im.width * k / 2, by + 9 - im.height * k / 2, im.width * k, im.height * k); }
+      else { g.fillStyle = '#FF6622'; g.fillText('?', bx + 6, by + 9); }
+      boxes.push([bx - 2, by - 2, bx + 20, by + 20]);
     });
-    if (gr.list.length > 4) { const mx = x - 13 + 4 * 28; g.fillStyle = '#00242E'; g.fillRect(mx, y - 7, 20, 14); g.fillStyle = '#fff'; g.fillText('+' + (gr.list.length - 4), mx + 2, y); boxes.push([mx, y - 7, mx + 20, y + 7]); }
+    if (gr.list.length > 4) { const mx = x - 9 + 4 * 20; g.fillStyle = '#00242E'; g.fillRect(mx, y - 7, 20, 14); g.fillStyle = '#fff'; g.fillText('+' + (gr.list.length - 4), mx + 2, y); boxes.push([mx, y - 7, mx + 20, y + 7]); }
     const txt = gr.list.map(sg => sg.code ? sg.code + (sg.val ? ` (${sg.val})` : '') : STATUS_TXT[sg.status]).filter((v, i, arr) => arr.indexOf(v) === i).join(' · ');
-    labels.push([txt, x - 13, y + 17]);
+    labels.push([txt, x - 9, y + 12]);
   }
   const hit = (p, q) => !(p[2] < q[0] || p[0] > q[2] || p[3] < q[1] || p[1] > q[3]);
   const placed = [];
@@ -150,7 +150,7 @@ async function renderPrintMap(Wc, Hc) {
   g.fillRect(20, Hc - 26, len / 2, 6); g.strokeStyle = '#00242E'; g.lineWidth = 1; g.strokeRect(20, Hc - 26, len, 6);
   g.font = "600 10px 'Albert Sans'"; g.fillText('0', 17, Hc - 35); g.fillText(nice + ' FT', 20 + len - 8, Hc - 35);
   // attribution
-  g.font = "500 9px 'Albert Sans'"; const at = 'Aerial: Esri, Maxar, Earthstar Geographics | Sign positions: Mapillary (CC BY-SA)';
+  g.font = "500 9px 'Albert Sans'"; const at = 'Aerial: Esri, Maxar, Earthstar Geographics | Imagery: Mapillary (CC BY-SA)';
   const aw = g.measureText(at).width + 10; g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(Wc - aw - 2, Hc - 16, aw, 14); g.fillStyle = '#00242E'; g.fillText(at, Wc - aw + 3, Hc - 9);
   return cv.toDataURL('image/jpeg', 0.9);
 }
@@ -334,7 +334,7 @@ async function run(bbox, name, verifiedKey) {
     for (const s of signs) if (s.code in SPEED && !s.val) { const m = /(\d{2})/.exec(s.legend || ''); if (m) s.val = m[1]; }
     setBar(0.95, 'Drawing map');
     await rasterFaces();
-    map.fitBounds(areaRect.getBounds()); lastZ = map.getZoom(); draw(); inventory();
+    map.fitBounds(areaRect.getBounds(), {animate:false}); lastZ = map.getZoom(); draw(); inventory();
     const cnt = k => signs.filter(s => s.status === k).length;
     setBar(1, `Done. ${signs.length} signs: ${cnt('verified')} verified, ${cnt('auto')} auto, ${cnt('nomatch')} no code, ${cnt('unreadable')} unreadable.`);
   } catch (e) { setBar(0, 'Load failed: ' + e.message + '. Try again.'); console.error(e); }
@@ -405,5 +405,5 @@ $('#btn-xlsx').onclick = async () => {
 };
 // link parameters: ?area=hds opens the test area; &print=1 sets the 11x17 sheet layout (for PDF export tools)
 const Q = new URLSearchParams(location.search);
-if (Q.get('area') === C.TEST.key) run(C.TEST.bbox, C.TEST.name, C.TEST.key).then(() => { if (Q.get('print') === '1') { preparePrint(); } });
+if (Q.get('area') === C.TEST.key) run(C.TEST.bbox, C.TEST.name, C.TEST.key).then(() => { if (Q.get('print') === '1') setTimeout(preparePrint, 600); });
 })();

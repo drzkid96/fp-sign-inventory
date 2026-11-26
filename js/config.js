@@ -3,7 +3,7 @@ window.CFG = {
   MLY: 'MLY|40172474529066594|4d4b4dc682713e58c6ca50d474ea1a98',
   MAX_AREA_DEG2: 0.0006,   // about 6 sq km at LA latitude
   CHUNK_DEG: 0.005,
-  DATA_V: '1795669913',   // bump when data files change
+  DATA_V: '1795669996',   // bump when data files change
   TEST: {
     key: 'hds',
     name: 'HUNTINGTON DR S, EL SERENO, LOS ANGELES',
