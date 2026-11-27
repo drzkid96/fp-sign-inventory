@@ -3,7 +3,7 @@ name: inventory
 # An area file looks like: {"name": "HUNTINGTON DR, EL SERENO, LOS ANGELES", "bbox": [west, south, east, north], "corridor": "Huntington Dr"}
 on:
   push:
-    paths: ['requests/**']
+    paths: ['requests/**', '!requests/base.json']
   workflow_dispatch:
     inputs:
       area:
@@ -26,7 +26,7 @@ jobs:
       - name: Run inventory
         run: |
           if [ -n "${{ github.event.inputs.area }}" ]; then files="requests/${{ github.event.inputs.area }}.json"
-          else files=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD -- requests/ | grep '\.json$' || true); fi
+          else files=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD -- requests/ | grep '\.json$' | grep -v 'requests/base.json' || true); fi
           for f in $files; do echo "== $f"; python pipeline/run.py "$f"; done
       - name: Commit results
         run: |
