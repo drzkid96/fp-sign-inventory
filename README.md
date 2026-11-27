@@ -9,7 +9,10 @@ Add a file to `requests/`, for example `requests/hds.json`:
 
 ```json
 {"name": "HUNTINGTON DR, EL SERENO, LOS ANGELES", "bbox": [-118.1945, 34.0780, -118.1770, 34.0875], "corridor": "Huntington Dr"}
+{"name": "GLENOAKS BLVD, BURBANK", "city": "Burbank", "corridor_match": "Glenoaks", "scale": 30}
+{"name": "DOWNTOWN CULVER CITY", "bbox": [-118.3995, 34.0197, -118.3925, 34.0253], "layout": "grid", "scale": 80}
 ```
+A `city` + `corridor_match` request takes the whole street inside the city limits from OpenStreetMap and inventories a 70 m buffer around it.
 
 Pushing the file starts the `inventory` Action (or run it from the Actions tab with the area key). It writes `data/areas/<key>/`: `signs.json`, a photo crop per sign and the plan sheet PDF. The site shows the area at `?area=<key>`.
 
@@ -18,8 +21,9 @@ Pushing the file starts the `inventory` Action (or run it from the Actions tab w
 2. **Sign boxes:** the box drawn around each sign in each photo; backs of signs and advertising are dropped.
 3. **Codes:** each sign view is read by `pipeline/model/signnet.onnx`, an image model fine-tuned on hand-checked views of signs in El Sereno plus synthetic views made from the standard sign faces.
 4. **Placement:** views of the same code from different photos are matched by crossing their sight lines, so each pole gets its own position and signs stacked on one pole stay separate. The same sign seen in several photo years is merged.
-5. **Approach:** each sign is tied to its street, the direction of travel it serves (from the way it faces) and the next cross street, from OpenStreetMap.
-6. **Sheets:** 11x17 at 1" = 40', rotated along the corridor, with a callout and a sign picture at every pole, a sign table, a key map and every street that has no photos marked.
+5. **OSM context:** each sign's read is weighted by OpenStreetMap facts about the approach it faces: stop or signal control, one-way streets nearby and turn-lane tags. A sign facing a stop-controlled approach leans to R1-1, lane-use signs follow the turn lanes (and get their arrow side), signal-only signs lean away from unsignalized corners. Weights are modest, so a clear read wins; they settle close calls.
+6. **Approach:** each sign is tied to its street, the direction of travel it serves (from the way it faces) and the next cross street, from OpenStreetMap.
+7. **Sheets:** 11x17 at 1" = 40', rotated along the corridor, with a callout and a sign picture at every pole, a sign table, a key map and every street that has no photos marked.
 
 ## Accuracy (held-out signs the model never saw)
 | | Share of signs | Correct |

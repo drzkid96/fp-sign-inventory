@@ -76,23 +76,36 @@ def near_corridor(A):
             n = max(1, int(np.linalg.norm(b - a) // 4)); dense += [a + (b - a) * t / n for t in range(n + 1)]
     T = cKDTree(dense); buf = REQ.get('buffer', 70)
     return [a for a in A if T.query(xy(*a['computed_geometry']['coordinates']))[0] <= buf]
+def thin(A, s=None):
+    # one photo per spot and heading (newest first, panoramas first): dense captures add load, not information
+    s = s or REQ.get('thin_m', 8 if CORR else 0)
+    if not s: return A
+    seen = set(); out = []
+    for a in sorted(A, key=lambda a: (not a.get('is_pano'), -a['captured_at'])):
+        x, y = xy(*a['computed_geometry']['coordinates'])
+        k = (round(x / s), round(y / s), 0 if a.get('is_pano') else int(((a['computed_compass_angle'] or 0) + 45) % 360 // 90))
+        if k in seen: continue
+        seen.add(k); out.append(a)
+    return out
 def images():
     if os.path.exists('all_images.json'): return json.load(open('all_images.json'))
-    out = {}; n = max(1, int(max(BBOX[2] - BBOX[0], BBOX[3] - BBOX[1]) / 0.003))
-    for i in range(n):
-        for j in range(n):
-            bx = [BBOX[0] + (BBOX[2] - BBOX[0]) * i / n, BBOX[1] + (BBOX[3] - BBOX[1]) * j / n, BBOX[0] + (BBOX[2] - BBOX[0]) * (i + 1) / n, BBOX[1] + (BBOX[3] - BBOX[1]) * (j + 1) / n]
-            r = get('https://graph.mapillary.com/images', access_token=TOKEN, bbox=','.join(f'{v:.6f}' for v in bx), limit=2000,
-                    fields='id,captured_at,computed_geometry,computed_compass_angle,is_pano,width,height,camera_parameters,thumb_original_url,thumb_2048_url')
-            if r is None: raise SystemExit(f'photo list failed for part of the area {bx}; nothing was written')
-            data = r.json().get('data', [])
-            if len(data) >= 2000:
-                for sub in quarter(bx):
-                    for d in cell(sub): out[d['id']] = d
-                continue
-            for d in data:
-                if d.get('computed_geometry') and d.get('computed_compass_angle') is not None: out[d['id']] = d
-    A = near_corridor(list(out.values())); json.dump(A, open('all_images.json', 'w')); return A
+    step = 0.002 if CORR else 0.003
+    nx = max(1, int(math.ceil((BBOX[2] - BBOX[0]) / step))); ny = max(1, int(math.ceil((BBOX[3] - BBOX[1]) / step)))
+    cells = [[BBOX[0] + (BBOX[2] - BBOX[0]) * i / nx, BBOX[1] + (BBOX[3] - BBOX[1]) * j / ny, BBOX[0] + (BBOX[2] - BBOX[0]) * (i + 1) / nx, BBOX[1] + (BBOX[3] - BBOX[1]) * (j + 1) / ny] for i in range(nx) for j in range(ny)]
+    if CORR:
+        # only the cells the corridor buffer touches
+        dense = [xy(p['lon'], p['lat']) for w in CORR for p in w['geometry']]
+        T = cKDTree(dense); buf = REQ.get('buffer', 70)
+        def touches(b):
+            c = xy((b[0] + b[2]) / 2, (b[1] + b[3]) / 2); half = math.hypot((b[2] - b[0]) * K, (b[3] - b[1]) * KL) / 2
+            return T.query(c)[0] <= half + buf + 30
+        cells = [b for b in cells if touches(b)]
+    log('photo list cells', len(cells))
+    out = {}
+    with cf.ThreadPoolExecutor(8) as ex:
+        for data in ex.map(cell, cells):
+            for d in data: out[d['id']] = d
+    A = thin(near_corridor(list(out.values()))); json.dump(A, open('all_images.json', 'w')); return A
 
 # 2. sign boxes per photo
 import mapbox_vector_tile as mvt
@@ -219,11 +232,11 @@ def group(R, P, CL):
         best = max(mem, key=lambda m: (m['t'] > 1.7e12, min(m['wpx'], m['hpx'])))
         res.append(dict(code=s['code'], x=s['x'], y=s['y'], lon=LON0 + s['x'] / K, lat=LAT0 + s['y'] / KL, h=s['h'], face=face,
                         conf=round(float(np.mean([P[m['i']][ci] for m in mem])), 3), nviews=len(mem), years=sorted(set(time.gmtime(m['t'] / 1000).tm_year for m in mem)),
-                        best=best['id'], best_img=best['img'], members=[m['id'] for m in mem]))
+                        best=best['id'], best_img=best['img'], members=[m['id'] for m in mem], pv=np.mean([P[m['i']] for m in mem], 0).tolist()))
     # same sign seen in several photo years
     res.sort(key=lambda s: (-max(s['years']), -s['nviews'])); out = []
     for s in res:
-        d = next((o for o in out if o['code'] == s['code'] and math.hypot(o['x'] - s['x'], o['y'] - s['y']) < 5 and adiff(o['face'], s['face']) < 60), None)
+        d = next((o for o in out if o['code'].split('/')[0] == s['code'].split('/')[0] and math.hypot(o['x'] - s['x'], o['y'] - s['y']) < 8 and adiff(o['face'], s['face']) < 50), None)
         if d: d['years'] = sorted(set(d['years']) | set(s['years'])); d['nviews'] += s['nviews']; d['conf'] = max(d['conf'], s['conf']); d['members'] += s['members']
         else: out.append(s)
     new = [o for o in out if max(o['years']) >= 2024]; keep = []
@@ -318,6 +331,8 @@ if __name__ == '__main__':
     if FAILS.get('graph.mapillary.com', 0) > 0.05 * len(A): raise SystemExit('too many sign-box requests failed; rerun later')
     P, CL = classify(R); log('classified')
     S = group(R, P, CL); log('signs', len(S))
+    sys.path.insert(0, HERE); import context
+    nchg = context.apply(S, O, xy, CL); log('codes changed by OSM context', nchg)
     S = approach(S, O); cov = coverage(A, O); log('street length with photos', cov, '%')
     json.dump(S, open('signs3.json', 'w'))
     corridor = REQ.get('corridor') or collections.Counter(s['street'] for s in S if s['code'] not in ('STREET', 'GUIDE')).most_common(1)[0][0]
@@ -326,13 +341,13 @@ if __name__ == '__main__':
     if REQ.get('layout') == 'grid':
         cl = np.zeros((0, 2)); F = sheets_geo.frames_grid([s for s in S if s['code'] not in ('STREET', 'GUIDE', 'X')], BBOX)
     else:
-        cl = sheets_geo.centerline(O, full); F = sheets_geo.frames(cl, S)
+        cl = sheets_geo.centerline(O, {w['tags']['name'] for w in CORR} if CORR else full); F = sheets_geo.frames(cl, S)
     json.dump({'cl': cl.tolist(), 'frames': F}, open('frames.json', 'w'))
     date = datetime.date.today().isoformat()
     os.makedirs(os.path.join(REPO, 'data', 'areas', KEY, 'crops'), exist_ok=True)
     pdf = os.path.join(REPO, 'data', 'areas', KEY, f'{date}_SIGN-INVENTORY_{KEY.upper()}.pdf')
     scale = REQ.get('scale') or (80 if REQ.get('layout') == 'grid' else 40); sheets_geo.setup(BBOX, scale)
-    env = dict(os.environ, REPO=REPO, AREA=AREA, BBOX=json.dumps(BBOX), DATE=date, SCALE=str(scale))
+    env = dict(os.environ, REPO=REPO, AREA=AREA, BBOX=json.dumps(BBOX), DATE=date, SCALE=str(scale), LAYOUT=REQ.get('layout', 'corridor'), HIGH=str(HIGH))
     subprocess.run([sys.executable, os.path.join(HERE, 'build_sheets.py'), pdf], check=True, env=env, cwd=W)
     Sf = json.load(open('signs_final.json')); IXR = json.load(open('intersections.json'))
     for i in IXR: i['lon'], i['lat'] = LON0 + i['x'] / K, LAT0 + i['y'] / KL
@@ -341,7 +356,7 @@ if __name__ == '__main__':
         c = cv2.imread(f"dc/{s['best']}.jpg"); cv2.imwrite(os.path.join(REPO, 'data', 'areas', KEY, 'crops', s['id'] + '.jpg'), c, [cv2.IMWRITE_JPEG_QUALITY, 85])
         code = s['code'].split('/')[0] if s['code'].startswith('R2-1') else ('' if s['code'].startswith('NC-') else s['code'])
         site.append(dict(id=s['id'], lat=s['lat'], lon=s['lon'], code=code, val=s['code'].split('/')[1] if s['code'].startswith('R2-1/') else '',
-                         status='verified' if s['conf'] >= HIGH else 'review', conf=s['conf'], dir=round(s['face']), loc=s['loc'],
+                         status='verified' if s['conf'] >= HIGH else 'review', conf=s['conf'], arrow=s.get('arrow', ''), osm='; '.join(s.get('osm_notes', [])), code_model=s.get('code_model', ''), dir=round(s['face']), loc=s['loc'],
                          seen=str(max(s['years'])), years=s['years'], views=s['nviews'], img=s['best_img'], crop=s['id'] + '.jpg',
                          cls={'NC-PARK': 'Parking sign (no standard code)', 'NC-WARN': 'Warning sign (no standard code)', 'NC-ID': 'Community ID sign'}.get(s['code'], '')))
     names = [dict(lat=s['lat'], lon=s['lon'], kind=s['code'], loc=s['loc'], seen=str(max(s['years']))) for s in S if s['code'] in ('STREET', 'GUIDE')]

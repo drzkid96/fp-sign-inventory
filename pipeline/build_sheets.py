@@ -1,7 +1,7 @@
 import json,math,numpy as np,cv2,os,sys,io,collections
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 import sheets_geo
-REPO=os.environ['REPO'];AREA=os.environ['AREA'];sheets_geo.setup(json.loads(os.environ['BBOX']),int(os.environ.get('SCALE','40')));DATE=os.environ.get('DATE','')
+REPO=os.environ['REPO'];AREA=os.environ['AREA'];sheets_geo.setup(json.loads(os.environ['BBOX']),int(os.environ.get('SCALE','40')));DATE=os.environ.get('DATE','');LAYOUT=os.environ.get('LAYOUT','corridor');HIGH=float(os.environ.get('HIGH','0.7'))
 from sheets_geo import *
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
@@ -27,6 +27,7 @@ for s in S:
 S.sort(key=lambda s:(s['sheet'],s['sta'],-s['y']))
 for i,s in enumerate(S): s['id']=f'S-{i+1:03d}'
 F=[f for f in F if any(s['sheet']==f['i'] for s in S)]
+if os.environ.get('ONLY'): F=[f for f in F if f['i'] in json.loads(os.environ['ONLY'])]
 import intersections as IXM
 _bb=json.loads(os.environ['BBOX']); _x1,_y1=xy(_bb[2],_bb[3])
 IX=IXM.check(O,S,[xy(*a['computed_geometry']['coordinates']) for a in A],xy,(0,0,_x1,_y1))
@@ -53,6 +54,7 @@ def ir(path):
         im=Image.open(path).convert('RGBA'); bg=Image.new('RGBA',im.size,(255,255,255,0)); IMGC[path]=ImageReader(im)
     return IMGC[path]
 def name(code): return NC.get(code) or ('Speed Limit' if code.startswith('R2-1') else None) or lib.get(code.split('/')[0],{}).get('n','') or code
+def dispS(s): return disp(s['code'])+(f" ({s['arrow']})" if s.get('arrow') else '')
 def disp(code): return f"R2-1 ({code.split('/')[1]})" if code.startswith('R2-1/') else ('NO CODE' if code in NC else code)
 # coverage (photos within 12 m)
 Iall=cKDTree([xy(*a['computed_geometry']['coordinates']) for a in A])
@@ -91,61 +93,171 @@ for fr in F:
     c.setDash()
     occ=[]
     # street names (once per street per sheet, at a point inside)
-    done=set()
+    done=set(); placed=[]
+    ixq=[P(ix['x'],ix['y']) for ix in IX]+[(MAPW-0.45,MAPH-0.5)]
     for nm,g in streets:
         if nm in done: continue
-        pts=[P(*q) for q in g]; ins=[(i,p) for i,p in enumerate(pts) if 0.8<p[0]<MAPW-0.8 and 0.5<p[1]<MAPH-0.5]
-        if len(ins)<2: continue
-        i,p=ins[len(ins)//2]; j=min(i+1,len(pts)-1); q=pts[j] if j!=i else pts[i-1]
-        ang=math.degrees(math.atan2(q[1]-p[1],q[0]-p[0]));
+        pts=[P(*q) for q in g]; lab=nm.upper(); w=c.stringWidth(lab,'ASB',7.5); hw=(w/72+0.12)/2
+        cand=[]
+        for p0,p1 in zip(pts[:-1],pts[1:]):   # candidate spots every 0.2 in along the street
+            L=math.hypot(p1[0]-p0[0],p1[1]-p0[1]); ang=math.atan2(p1[1]-p0[1],p1[0]-p0[0])
+            for t in np.arange(0,max(L,1e-6),0.2):
+                cand.append(((p0[0]+math.cos(ang)*t,p0[1]+math.sin(ang)*t),ang))
+        def samples(p,ang): return [(p[0]+math.cos(ang)*d,p[1]+math.sin(ang)*d) for d in np.linspace(-hw,hw,max(3,int(hw/0.08)))]
+        ok=[]
+        for p,ang in cand:
+            sm=samples(p,ang)
+            if not all(0.5<x<MAPW-0.5 and 0.5<y<MAPH-0.5 for x,y in sm): continue
+            if any(math.hypot(x-q[0],y-q[1])<0.22 for x,y in sm for q in ixq): continue   # off intersection markers
+            if any(math.hypot(x-q[0],y-q[1])<0.17 for x,y in sm for q in placed): continue  # off other street names
+            ok.append((p,ang))
+        if not ok: continue
+        mid=np.mean([q for q,_ in ok],axis=0); p,ang=min(ok,key=lambda t:math.hypot(t[0][0]-mid[0],t[0][1]-mid[1]))
+        placed+=samples(p,ang); ang=math.degrees(ang)
         if ang>90: ang-=180
         if ang<-90: ang+=180
         c.saveState(); c.translate((MX+p[0])*inch,(MY+p[1])*inch); c.rotate(ang)
-        lab=nm.upper(); c.setFont('ASB',7.5); w=c.stringWidth(lab,'ASB',7.5)
+        c.setFont('ASB',7.5)
         c.setFillColorRGB(1,1,1); c.setFillAlpha(0.85); c.roundRect(-w/2-3,-3.5,w+6,11,2,stroke=0,fill=1); c.setFillAlpha(1)
         c.setFillColorRGB(*SLATE); c.drawCentredString(0,-0.5,lab); c.restoreState(); done.add(nm)
-        hw=(w/72+0.1)/2; occ.append((p[0]-hw*abs(math.cos(math.radians(ang)))-0.08,p[1]-hw*abs(math.sin(math.radians(ang)))-0.08,p[0]+hw*abs(math.cos(math.radians(ang)))+0.08,p[1]+hw*abs(math.sin(math.radians(ang)))+0.08))
+        occ.append((p[0]-hw*abs(math.cos(math.radians(ang)))-0.08,p[1]-hw*abs(math.sin(math.radians(ang)))-0.08,p[0]+hw*abs(math.cos(math.radians(ang)))+0.08,p[1]+hw*abs(math.sin(math.radians(ang)))+0.08))
     IXP=[]
     for ix in IX:
         px_,py_=P(ix['x'],ix['y'])
         if 0.3<px_<MAPW-0.3 and 0.3<py_<MAPH-0.3: IXP.append((ix,px_,py_)); occ.append((px_-0.16,py_-0.16,px_+0.16,py_+0.16))
     # signs: poles, facing arrows, callouts
     poles=[]; occ.append((MAPW-0.8,MAPH-0.85,MAPW,MAPH))
-    for s in sh: poles.append(P(s['x'],s['y']))
+    for s in sh:   # a sign beyond the sheet edge is shown at the edge, with a chevron pointing toward it
+        qx,qy=P(s['x'],s['y']); s['_off']=None
+        if not(0.08<qx<MAPW-0.08 and 0.08<qy<MAPH-0.08):   # inset past the callout band so its leader stays visible
+            E_=0.55; cx_,cy_=min(max(qx,E_),MAPW-E_),min(max(qy,E_),MAPH-E_)
+            if cx_>MAPW-1.0 and cy_>MAPH-1.0: cx_=MAPW-1.0   # keep clear of the north arrow
+            s['_off']=math.atan2(qy-cy_,qx-cx_); qx,qy=cx_,cy_
+        poles.append((qx,qy))
     for (px,py) in poles: occ.append((px-0.05,py-0.05,px+0.05,py+0.05))
-    BW,BH=0.80,0.27
-    for s,(px,py) in sorted(zip(sh,poles),key=lambda t:t[1][0]):
-        side=1 if py>=MAPH/2+(0) else -1
-        cands=[]
-        for r_ in np.arange(0.3,2.6,0.12):
-            for k in range(24):
-                a=math.radians(90*side+[0,15,-15,30,-30,45,-45,60,-60,75,-75,90,-90,105,-105,120,-120,135,-135,150,-150,165,-165,180][k])
-                cx=px+r_*math.cos(a)-BW/2; cy=py+r_*math.sin(a)-BH/2
-                if cx<0.05 or cy<0.05 or cx+BW>MAPW-0.05 or cy+BH>MAPH-0.05: continue
-                cands.append((cx,cy,r_,k))
-        pick=None
-        for cx,cy,r_,k in cands:
-            bx=(cx-0.03,cy-0.03,cx+BW+0.03,cy+BH+0.03)
-            if not any(not(bx[2]<o[0] or bx[0]>o[2] or bx[3]<o[1] or bx[1]>o[3]) for o in occ): pick=(cx,cy);break
-        if pick is None: pick=(cands[0][0],cands[0][1]) if cands else (px+0.1,py+0.1)
-        cx,cy=pick; occ.append((cx,cy,cx+BW,cy+BH)); s['_cb']=(cx,cy)
+    BW,BH=(0.80,0.27) if LAYOUT=='grid' else (0.74,0.27)
+    if LAYOUT!='grid':
+        # corridor sheets: callout slots around the map edge (top, bottom, and the side edges away from the corridor);
+        # signs go to slots by minimum total leader length, which keeps leaders short and uncrossed
+        from scipy.optimize import linear_sum_assignment
+        GAP=0.05; EW=0.74; SW=EW+0.06
+        slots=[]
+        x=0.1
+        while x+SW<=MAPW-0.1:
+            slots.append((x,0.12))
+            if x+SW<=MAPW-0.95: slots.append((x,MAPH-0.12-BH))
+            x+=SW+GAP
+        y=0.12+BH+0.12
+        while y+BH<=MAPH-0.12-BH-0.12:
+            if abs(y+BH/2-MAPH/2)>1.4:
+                slots.append((0.1,y))
+                if not (y+BH>MAPH-0.95): slots.append((MAPW-0.1-SW,y))
+            y+=BH+0.08
+        def near(px,py,sx,sy): return min(max(px,sx),sx+SW),min(max(py,sy),sy+BH)
+        cost=np.zeros((len(sh),len(slots)))
+        for j,(sx,sy) in enumerate(slots):
+            pen=0
+            if any(sx-0.1<qx<sx+SW+0.1 and sy-0.1<qy<sy+BH+0.1 for qx,qy in poles): pen+=1000
+            if any(not(sx+SW<o[0] or sx>o[2] or sy+BH<o[1] or sy>o[3]) for o in occ[:len(occ)-len(poles)]): pen+=40
+            for i,(px,py) in enumerate(poles):
+                nx_,ny_=near(px,py,sx,sy); cost[i,j]=math.hypot(nx_-px,ny_-py)+pen
+        ri_,ci_=linear_sum_assignment(cost)
+        A={int(i):int(j) for i,j in zip(ri_,ci_)}
+        def seg(i): return poles[i],near(*poles[i],*slots[A[i]])
+        def ccw(a,b,c_): return (c_[1]-a[1])*(b[0]-a[0])>(b[1]-a[1])*(c_[0]-a[0])
+        def cross(i,k):
+            (p1,q1),(p2,q2)=seg(i),seg(k)
+            if math.hypot(p1[0]-p2[0],p1[1]-p2[1])<0.02: return False
+            return ccw(p1,p2,q2)!=ccw(q1,p2,q2) and ccw(p1,q1,p2)!=ccw(p1,q1,q2)
+        def segbox(p1,q1,sx,sy):   # leader passes through a callout box
+            m=0.02; X0,Y0,X1,Y1=sx-m,sy-m,sx+SW+m,sy+BH+m
+            for t in np.linspace(0.04,0.96,24):
+                x_,y_=p1[0]+(q1[0]-p1[0])*t,p1[1]+(q1[1]-p1[1])*t
+                if X0<x_<X1 and Y0<y_<Y1: return True
+            return False
+        def bad(i):
+            p1,q1=seg(i)
+            return sum(1 for k in A if k!=i and (cross(i,k) or segbox(p1,q1,*slots[A[k]])))
+        def total(): return sum(bad(i) for i in A)
+        T=total(); free=[j for j in range(len(slots)) if j not in A.values()]
+        for _ in range(300):   # fix crossings: swap two signs' slots or move one to a free slot, keep the move if conflicts drop
+            if T==0: break
+            worst=max(A,key=bad); best=None
+            for k in list(A)+[None]:
+                for f in ([None] if k is not None else free):
+                    if k==worst: continue
+                    old=dict(A)
+                    if k is not None: A[worst],A[k]=A[k],A[worst]
+                    else: A[worst]=f
+                    t=total()+0.02*sum(cost[i,A[i]] for i in A)
+                    if best is None or t<best[0]: best=(t,dict(A))
+                    A.clear(); A.update(old)
+            if best and int(best[0])<T or (best and int(best[0])==T and best[0]<T+0.02*sum(cost[i,A[i]] for i in A)-1e-9 and False):
+                A.clear(); A.update(best[1]); T=total(); free=[j for j in range(len(slots)) if j not in A.values()]
+            else: break
+        print('LAYOUT sheet',fr['i'],'conflicts',T,'off-map poles',[sh[i]['id'] for i,(qx,qy) in enumerate(poles) if not(0<qx<MAPW and 0<qy<MAPH)])
+        asm=[]
+        for i,j in A.items():
+            s_=sh[i]; sx,sy=slots[j]; px,py=poles[i]
+            a_=dict(px=px,py=py,signs=[s_],cx=sx,cy=sy,w=SW,h=BH,side=1 if sy>MAPH/2 else -1)
+            s_['_cb']=(sx+0.03,sy); s_['_side']=a_['side']; s_['_asm']=a_; asm.append(a_)
+    else:
+        for s,(px,py) in sorted(zip(sh,poles),key=lambda t:t[1][0]):
+            side=1 if py>=MAPH/2+(0) else -1
+            cands=[]
+            for r_ in np.arange(0.3,2.6,0.12):
+                for k in range(24):
+                    a=math.radians(90*side+[0,15,-15,30,-30,45,-45,60,-60,75,-75,90,-90,105,-105,120,-120,135,-135,150,-150,165,-165,180][k])
+                    cx=px+r_*math.cos(a)-BW/2; cy=py+r_*math.sin(a)-BH/2
+                    if cx<0.05 or cy<0.05 or cx+BW>MAPW-0.05 or cy+BH>MAPH-0.05: continue
+                    cands.append((cx,cy,r_,k))
+            pick=None
+            for cx,cy,r_,k in cands:
+                bx=(cx-0.03,cy-0.03,cx+BW+0.03,cy+BH+0.03)
+                if not any(not(bx[2]<o[0] or bx[0]>o[2] or bx[3]<o[1] or bx[1]>o[3]) for o in occ): pick=(cx,cy);break
+            if pick is None: pick=(cands[0][0],cands[0][1]) if cands else (px+0.1,py+0.1)
+            cx,cy=pick; occ.append((cx,cy,cx+BW,cy+BH)); s['_cb']=(cx,cy)
+    if LAYOUT!='grid':
+        hid=[s for s,(px,py) in zip(sh,poles) for a in asm if a['cx']-0.03<px<a['cx']+a['w']+0.03 and a['cy']-0.03<py<a['cy']+a['h']+0.03]
+        if hid: print('POLE UNDER CALLOUT sheet',fr['i'],[s['id'] for s in hid])
+    drawn=set()
     for s,(px,py) in zip(sh,poles):
-        cx,cy=s['_cb']; col=JADE if s['conf']>=0.8 else ORG
-        # leader
-        tx=min(max(px,cx),cx+BW); ty=min(max(py,cy),cy+BH)
-        c.setStrokeColorRGB(*SLATE);c.setLineWidth(0.6);c.line((MX+px)*inch,(MY+py)*inch,(MX+tx)*inch,(MY+ty)*inch)
+        cx,cy=s['_cb']; col=JADE if s['conf']>=HIGH else ORG
+        c.setStrokeColorRGB(*SLATE);c.setLineWidth(0.55)
+        A_=s.get('_asm')
+        if LAYOUT!='grid' and id(A_) not in drawn:
+            drawn.add(id(A_)); ax,ay,aw,ah=A_['cx'],A_['cy'],A_['w'],A_['h']
+            bx_=min(max(A_['px'],ax),ax+aw); by_=min(max(A_['py'],ay),ay+ah)
+            pth=c.beginPath();pth.moveTo((MX+A_['px'])*inch,(MY+A_['py'])*inch)
+            pth.lineTo((MX+bx_)*inch,(MY+by_)*inch)   # one straight leader; boxes keep pole order so leaders do not cross
+            c.drawPath(pth,stroke=1,fill=0)
+            c.setFillColorRGB(1,1,1);c.setStrokeColorRGB(*SLATE);c.setLineWidth(0.9);c.roundRect((MX+ax)*inch,(MY+ay)*inch,aw*inch,ah*inch,2,stroke=1,fill=1)
+        elif LAYOUT=='grid':
+            tx=min(max(px,cx),cx+BW); ty=min(max(py,cy),cy+BH)
+            c.line((MX+px)*inch,(MY+py)*inch,(MX+tx)*inch,(MY+ty)*inch)
+        if LAYOUT=='grid':
+            c.setFillColorRGB(1,1,1);c.setStrokeColorRGB(*col);c.setLineWidth(1.2);c.roundRect((MX+cx)*inch,(MY+cy)*inch,BW*inch,BH*inch,2,stroke=1,fill=1); ox=0.025
+        else:
+            # confidence shown as a colored bar on the left of each entry
+            c.setFillColorRGB(*col);c.rect((MX+cx)*inch,(MY+cy+0.04)*inch,0.035*inch,(BH-0.08)*inch,stroke=0,fill=1); ox=0.06
+        fi=face_img(s['code'])
+        if fi: c.drawImage(ir(fi),(MX+cx+ox)*inch,(MY+cy+0.025)*inch,0.22*inch,0.22*inch,mask='auto',preserveAspectRatio=True,anchor='c')
+        room=(EW if LAYOUT!='grid' else BW)-ox-0.245-0.03; lab_=dispS(s); fs_=5.8
+        while fs_>4.8 and c.stringWidth(lab_,'ASM',fs_)/72>room: fs_-=0.2   # shrink a long code to fit its box
+        text(MX+cx+ox+0.245,MY+cy+0.155,s['id'],'ASB',6.3); text(MX+cx+ox+0.245,MY+cy+0.05,lab_,'ASM',fs_)
+    for s,(px,py) in zip(sh,poles):
+        if s['_off'] is not None:
+            o=s['_off']; pts=[(px+0.09*math.cos(o),py+0.09*math.sin(o)),(px+0.07*math.cos(o+2.4),py+0.07*math.sin(o+2.4)),(px+0.07*math.cos(o-2.4),py+0.07*math.sin(o-2.4))]
+            pth=c.beginPath();pth.moveTo((MX+pts[0][0])*inch,(MY+pts[0][1])*inch)
+            for q in pts[1:]: pth.lineTo((MX+q[0])*inch,(MY+q[1])*inch)
+            pth.close();c.setFillColorRGB(*ORG);c.setStrokeColorRGB(1,1,1);c.setLineWidth(0.6);c.drawPath(pth,stroke=1,fill=1); continue
         # facing arrow (direction the sign face points)
-        fa=math.radians(90-s['face'])-fr['ang']; ex,ey=px+0.16*math.cos(fa),py+0.16*math.sin(fa)
-        c.setStrokeColorRGB(*EMER);c.setLineWidth(1.3);c.line((MX+px)*inch,(MY+py)*inch,(MX+ex)*inch,(MY+ey)*inch)
+        fa=math.radians(90-s['face'])-fr['ang']; ex,ey2=px+0.16*math.cos(fa),py+0.16*math.sin(fa)
+        c.setStrokeColorRGB(*EMER);c.setLineWidth(1.3);c.line((MX+px)*inch,(MY+py)*inch,(MX+ex)*inch,(MY+ey2)*inch)
         h1=fa+math.radians(150);h2=fa-math.radians(150)
-        pth=c.beginPath();pth.moveTo((MX+ex)*inch,(MY+ey)*inch);pth.lineTo((MX+ex+0.06*math.cos(h1))*inch,(MY+ey+0.06*math.sin(h1))*inch);pth.lineTo((MX+ex+0.06*math.cos(h2))*inch,(MY+ey+0.06*math.sin(h2))*inch);pth.close()
+        pth=c.beginPath();pth.moveTo((MX+ex)*inch,(MY+ey2)*inch);pth.lineTo((MX+ex+0.06*math.cos(h1))*inch,(MY+ey2+0.06*math.sin(h1))*inch);pth.lineTo((MX+ex+0.06*math.cos(h2))*inch,(MY+ey2+0.06*math.sin(h2))*inch);pth.close()
         c.setFillColorRGB(*EMER);c.drawPath(pth,stroke=0,fill=1)
         c.setFillColorRGB(1,1,1);c.setStrokeColorRGB(*SLATE);c.setLineWidth(0.8);c.circle((MX+px)*inch,(MY+py)*inch,2.4,stroke=1,fill=1)
-        # callout box
-        c.setFillColorRGB(1,1,1);c.setStrokeColorRGB(*col);c.setLineWidth(1.2);c.roundRect((MX+cx)*inch,(MY+cy)*inch,BW*inch,BH*inch,2,stroke=1,fill=1)
-        fi=face_img(s['code'])
-        if fi: c.drawImage(ir(fi),(MX+cx+0.025)*inch,(MY+cy+0.025)*inch,0.22*inch,0.22*inch,mask='auto',preserveAspectRatio=True,anchor='c')
-        text(MX+cx+0.27,MY+cy+0.155,s['id'],'ASB',6.3); text(MX+cx+0.27,MY+cy+0.05,disp(s['code']),'ASM',6.0)
     for ix,px_,py_ in IXP:
         worst=[a_['status'] for a_ in ix['approaches']]
         col=ORG if any(w_ not in('OK','NO PHOTOS') for w_ in worst) else ((0.55,0.58,0.6) if all(w_=='NO PHOTOS' for w_ in worst) else JADE)
@@ -171,12 +283,12 @@ for fr in F:
         if k%2: c.setFillColorRGB(*BAND);c.rect(tx0*inch,y*inch,tw*inch,rh*inch,stroke=0,fill=1)
         mid=y+rh/2; fi=face_img(s['code']); ph=min(0.18,rh-0.02)
         if fi: c.drawImage(ir(fi),(tx0+0.03)*inch,(mid-ph/2)*inch,ph*inch,ph*inch,mask='auto',preserveAspectRatio=True,anchor='c')
-        text(tx0+0.28,mid-0.022,s['id'],'ASB',fs); text(tx0+0.72,mid-0.022,disp(s['code']),'ASM',fs)
+        text(tx0+0.28,mid-0.022,s['id'],'ASB',fs); text(tx0+0.72,mid-0.022,dispS(s),'ASM',fs)
         loc=s['loc']
         while c.stringWidth(loc,'AS',fs)>1.52*inch: loc=loc[:-2]
         text(tx0+1.46,mid-0.022,loc,'AS',fs)
         yr=max(s['years']); text(tx0+3.06,mid-0.022,str(yr),'ASM',fs,ORG if yr<2024 else SLATE)
-        c.setFillColorRGB(*(JADE if s['conf']>=0.8 else ORG)); c.circle((tx0+3.38)*inch,mid*inch,2.6,stroke=0,fill=1)
+        c.setFillColorRGB(*(JADE if s['conf']>=HIGH else ORG)); c.circle((tx0+3.38)*inch,mid*inch,2.6,stroke=0,fill=1)
     c.setStrokeColorRGB(*CREAM);c.setLineWidth(1.5);c.line(tx0*inch,y*inch,(tx0+tw)*inch,y*inch)
     # ---- bottom band
     by=0.35
@@ -185,12 +297,14 @@ for fr in F:
     c.setFillColorRGB(1,1,1);c.setStrokeColorRGB(*SLATE);c.setLineWidth(0.8);c.circle((lx+0.08)*inch,1.38*inch,2.4,stroke=1,fill=1)
     c.setStrokeColorRGB(*EMER);c.setLineWidth(1.3);c.line((lx+0.08)*inch,1.38*inch,(lx+0.24)*inch,1.38*inch)
     text(lx+0.36,1.35,'Sign post, arrow shows the way the sign faces','AS',6.8)
-    for i,(col,lab) in enumerate([(JADE,'Code read with high confidence'),(ORG,'Low confidence, check in field')]):
+    for i,(col,lab) in enumerate([(JADE,'Code read with high confidence (bar or box)'),(ORG,'Low confidence, check in field')]):
         c.setFillColorRGB(1,1,1);c.setStrokeColorRGB(*col);c.setLineWidth(1.2);c.roundRect((lx+0.02)*inch,(1.14-i*0.19)*inch,0.26*inch,0.13*inch,2,stroke=1,fill=1);text(lx+0.36,1.16-i*0.19,lab,'AS',6.8)
     c.setStrokeColorRGB(*ORG);c.setLineWidth(2.2);c.setDash(5,3);c.line((lx+0.0)*inch,0.81*inch,(lx+0.3)*inch,0.81*inch);c.setDash();text(lx+0.36,0.78,'Street with no street-level photos (not inventoried)','AS',6.8)
     c.setStrokeColorRGB(*JADE);c.setLineWidth(1.6);c.setFillColorRGB(1,1,1);c.circle((lx+0.15)*inch,0.62*inch,0.09*inch,stroke=1,fill=1);text(lx+0.15,0.595,'7','ASB',5.5,JADE,'c')
     text(lx+0.36,0.595,'Intersection checked against OpenStreetMap (green OK, orange check)','AS',6.8)
-    text(lx+0.36,0.42,'Photo year in orange: newest photo is before 2024','AS',6.8,ORG)
+    pth=c.beginPath();pth.moveTo((lx+0.19)*inch,0.445*inch);pth.lineTo((lx+0.11)*inch,0.495*inch);pth.lineTo((lx+0.11)*inch,0.395*inch);pth.close();c.setFillColorRGB(*ORG);c.drawPath(pth,stroke=0,fill=1)
+    text(lx+0.36,0.42,'Sign past the sheet edge, shown at the edge (chevron points to it)','AS',6.8)
+    text(lx+0.36,0.25,'Photo year in orange: newest photo is before 2024','AS',6.8,ORG)
     # key map
     kx,ky,kw,kh=4.2,0.35,4.6,1.35
     c.setStrokeColorRGB(*CREAM);c.setLineWidth(0.8);c.rect(kx*inch,ky*inch,kw*inch,kh*inch)
@@ -260,5 +374,7 @@ for pg in range(npg):
     c.setFillColorRGB(*SLATE);c.rect(15.85*inch,0.35*inch,0.8*inch,0.55*inch,stroke=0,fill=1)
     text(16.25,0.67,'CHECK','ASM',6,(1,1,1),'c'); text(16.25,0.44,f"{pg+1} of {npg}",'ASB',9,(1,1,1),'c')
     c.showPage()
-c.save(); json.dump(S,open('signs_final.json','w'),default=float)
+c.save()
+for s in S: s.pop('_asm',None); s.pop('_off',None)
+json.dump(S,open('signs_final.json','w'),default=float)
 print('sheets',collections.Counter(s['sheet'] for s in S))

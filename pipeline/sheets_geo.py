@@ -12,7 +12,8 @@ FT=0.3048
 SCALE=40  # 1 in = 40 ft
 MAPW,MAPH=12.6,8.5  # inches
 def centerline(O,name):
-    pts=np.array([xy(p['lon'],p['lat']) for w in O if w['type']=='way' and w.get('tags',{}).get('name')==name for p in w['geometry']])
+    names=name if isinstance(name,(set,list,tuple)) else {name}
+    pts=np.array([xy(p['lon'],p['lat']) for w in O if w['type']=='way' and w.get('tags',{}).get('name') in names for p in w['geometry']])
     m=pts.mean(0); _,_,V=np.linalg.svd(pts-m); u=V[0]; n=np.array([-u[1],u[0]])
     s=pts@u; o=pts@n; st=np.arange(s.min(),s.max()+1,20); cl=[]
     for v in st:
@@ -25,7 +26,7 @@ def centerline(O,name):
 def frames(cl,S):
     W=MAPW*SCALE*FT; H=MAPH*SCALE*FT
     seg=np.r_[0,np.cumsum(np.linalg.norm(np.diff(cl,axis=0),axis=1))]; L=seg[-1]
-    step=W-25; n=int(math.ceil((L-0)/step)); out=[]
+    step=W-(10 if SCALE<=30 else 25); n=int(math.ceil((L-0)/step)); out=[]
     for i in range(n):
         a=i*step; b=min(a+W,L); m=(a+b)/2
         p0=np.array([np.interp(a,seg,cl[:,0]),np.interp(a,seg,cl[:,1])]); p1=np.array([np.interp(b,seg,cl[:,0]),np.interp(b,seg,cl[:,1])])
@@ -51,7 +52,8 @@ def world_to_page(fr,x,y):
     c=np.array(fr['c']); a=fr['ang']; d=np.array([x,y])-c
     u=np.array([math.cos(a),math.sin(a)]); n=np.array([-math.sin(a),math.cos(a)])
     return (d@u)/(SCALE*FT)+MAPW/2,(d@n)/(SCALE*FT)+MAPH/2
-def render(fr,dpi=150,z=19):
+def render(fr,dpi=150,z=None):
+    z=z or (20 if SCALE<=40 else 19)
     TILEFAIL.clear(); Wp,Hp=int(MAPW*dpi),int(MAPH*dpi); c=np.array(fr['c']); a=fr['ang']
     u=np.array([math.cos(a),math.sin(a)]); n=np.array([-math.sin(a),math.cos(a)])
     jj,ii=np.meshgrid(np.arange(Wp),np.arange(Hp))
