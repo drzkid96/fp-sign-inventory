@@ -12,7 +12,27 @@ from sklearn.cluster import DBSCAN
 
 HERE = os.path.dirname(os.path.abspath(__file__)); REPO = os.path.dirname(HERE)
 req_path = sys.argv[1]; KEY = os.path.basename(req_path)[:-5]; REQ = json.load(open(req_path))
-BBOX = REQ['bbox']; AREA = REQ['name']
+AREA = REQ['name']
+W0 = os.path.join(REPO, 'work', KEY); os.makedirs(W0, exist_ok=True)
+OVERPASS = ('https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter')
+def overpass(q, path):
+    if os.path.exists(path): return json.load(open(path))['elements']
+    for u in OVERPASS:
+        try:
+            r = requests.post(u, data={'data': q}, timeout=200, headers={'User-Agent': 'fp-sign-inventory/1.0'})
+            if r.status_code == 200 and r.text.lstrip().startswith('{'): open(path, 'w').write(r.text); return r.json()['elements']
+        except Exception: pass
+    raise SystemExit('street network not available')
+CORR = None
+if REQ.get('city') and REQ.get('corridor_match'):
+    # a whole corridor inside one city: take the street's OSM geometry inside the city limits, the area is a buffer around it
+    q = (f'[out:json][timeout:120];area["name"="{REQ["city"]}"]["boundary"="administrative"]->.a;'
+         f'way(area.a)["highway"]["name"~"{REQ["corridor_match"]}"];out geom;')
+    CORR = [w for w in overpass(q, os.path.join(W0, 'corridor.json')) if w['type'] == 'way' and w['tags'].get('highway') not in ('service', 'footway', 'cycleway')]
+    lons = [p['lon'] for w in CORR for p in w['geometry']]; lats = [p['lat'] for w in CORR for p in w['geometry']]
+    BBOX = [min(lons) - 0.0012, min(lats) - 0.0010, max(lons) + 0.0012, max(lats) + 0.0010]
+else:
+    BBOX = REQ['bbox']
 W = os.path.join(REPO, 'work', KEY); os.makedirs(W, exist_ok=True); os.chdir(W)
 CFG = open(os.path.join(REPO, 'js', 'config.js')).read()
 TOKEN = os.environ.get('MLY_TOKEN') or CFG.split("MLY: '")[1].split("'")[0]
@@ -46,6 +66,16 @@ def cell(bx):
     data = [d for d in r.json().get('data', []) if d.get('computed_geometry') and d.get('computed_compass_angle') is not None]
     if len(r.json().get('data', [])) >= 2000 and bx[2] - bx[0] > 0.0004: return [d for q in quarter(bx) for d in cell(q)]
     return data
+def near_corridor(A):
+    if not CORR: return A
+    pts = np.array([xy(p['lon'], p['lat']) for w in CORR for p in w['geometry']])
+    dense = []
+    for w in CORR:
+        g = [np.array(xy(p['lon'], p['lat'])) for p in w['geometry']]
+        for a, b in zip(g[:-1], g[1:]):
+            n = max(1, int(np.linalg.norm(b - a) // 4)); dense += [a + (b - a) * t / n for t in range(n + 1)]
+    T = cKDTree(dense); buf = REQ.get('buffer', 70)
+    return [a for a in A if T.query(xy(*a['computed_geometry']['coordinates']))[0] <= buf]
 def images():
     if os.path.exists('all_images.json'): return json.load(open('all_images.json'))
     out = {}; n = max(1, int(max(BBOX[2] - BBOX[0], BBOX[3] - BBOX[1]) / 0.003))
@@ -62,7 +92,7 @@ def images():
                 continue
             for d in data:
                 if d.get('computed_geometry') and d.get('computed_compass_angle') is not None: out[d['id']] = d
-    A = list(out.values()); json.dump(A, open('all_images.json', 'w')); return A
+    A = near_corridor(list(out.values())); json.dump(A, open('all_images.json', 'w')); return A
 
 # 2. sign boxes per photo
 import mapbox_vector_tile as mvt
@@ -206,15 +236,9 @@ def group(R, P, CL):
 
 # 6. streets: approach and cross street
 def osm():
-    if os.path.exists('osm.json'): return json.load(open('osm.json'))['elements']
     b = f'{BBOX[1]},{BBOX[0]},{BBOX[3]},{BBOX[2]}'
-    q = f'[out:json][timeout:120];(way["highway"~"^(motorway|trunk|primary|secondary|tertiary|residential|unclassified|living_street|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link|service)$"]({b});node["highway"~"^(stop|give_way|traffic_signals)$"]({b}););out geom;'
-    for u in ('https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter'):
-        try:
-            r = requests.post(u, data={'data': q}, timeout=200, headers={'User-Agent': 'fp-sign-inventory/1.0'})
-            if r.status_code == 200: open('osm.json', 'w').write(r.text); return r.json()['elements']
-        except Exception: pass
-    raise SystemExit('street network not available')
+    q = f'[out:json][timeout:180];(way["highway"~"^(motorway|trunk|primary|secondary|tertiary|residential|unclassified|living_street|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link|service)$"]({b});node["highway"~"^(stop|give_way|traffic_signals|crossing)$"]({b}););out geom;'
+    return overpass(q, 'osm.json')
 def short(n):
     for a, b in ((' North', ' N'), (' South', ' S'), ('North ', 'N '), ('South ', 'S '), (' Street', ' St'), (' Avenue', ' Av'), (' Drive', ' Dr'), (' Road', ' Rd'), (' Boulevard', ' Blvd'), (' Place', ' Pl'), (' Lane', ' Ln'), (' Way', ' Wy'), (' Court', ' Ct')): n = n.replace(a, b)
     return n
@@ -265,7 +289,26 @@ def coverage(A, O):
             for t in range(n): tot += 1; hit += bool(I.query_ball_point(p + (q - p) * (t + .5) / n, 12))
     return round(100 * hit / max(tot, 1))
 
+def osm_near(O):
+    # keep the streets near the corridor (and every signal/stop node there)
+    if not CORR: return O
+    dense = []
+    for w in CORR:
+        g = [np.array(xy(p['lon'], p['lat'])) for p in w['geometry']]
+        for a, b in zip(g[:-1], g[1:]):
+            n = max(1, int(np.linalg.norm(b - a) // 5)); dense += [a + (b - a) * t / n for t in range(n + 1)]
+    T = cKDTree(dense); out = []
+    for e in O:
+        pts = [(p['lon'], p['lat']) for p in e.get('geometry', [])] if e['type'] == 'way' else [(e['lon'], e['lat'])]
+        if any(T.query(xy(*p))[0] < 160 for p in pts): out.append(e)
+    return out
+
 if __name__ == '__main__':
+    os.makedirs(os.path.join(REPO, 'data', 'areas', KEY), exist_ok=True)
+    O = osm_near(osm()); json.dump({'elements': O}, open(os.path.join(REPO, 'data', 'areas', KEY, 'streets.json'), 'w'))
+    if CORR: json.dump({'elements': CORR}, open(os.path.join(REPO, 'data', 'areas', KEY, 'corridor.json'), 'w'))
+    log('streets', len(O), 'bbox', [round(v, 5) for v in BBOX])
+    if REQ.get('stage') == 'streets': raise SystemExit(0)
     A = images(); log('photos', len(A))
     if not A: raise SystemExit('no street-level photos in this area')
     D = dets(A); log('photos with sign boxes', sum(1 for v in D.values() if v))
@@ -275,7 +318,7 @@ if __name__ == '__main__':
     if FAILS.get('graph.mapillary.com', 0) > 0.05 * len(A): raise SystemExit('too many sign-box requests failed; rerun later')
     P, CL = classify(R); log('classified')
     S = group(R, P, CL); log('signs', len(S))
-    O = osm(); S = approach(S, O); cov = coverage(A, O); log('street length with photos', cov, '%')
+    S = approach(S, O); cov = coverage(A, O); log('street length with photos', cov, '%')
     json.dump(S, open('signs3.json', 'w'))
     corridor = REQ.get('corridor') or collections.Counter(s['street'] for s in S if s['code'] not in ('STREET', 'GUIDE')).most_common(1)[0][0]
     full = next((w['tags']['name'] for w in O if w['type'] == 'way' and short(w['tags'].get('name', '')) == corridor), corridor)
