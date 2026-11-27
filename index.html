@@ -3,71 +3,60 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FP SIGN INVENTORY</title>
+<title>LA COUNTY STREET INVENTORY</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:ital,wght@0,300..700;1,400..700&display=swap">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="css/style.css?v=1795726262">
-<link rel="stylesheet" href="css/print.css?v=1795726262" media="print">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="css/map.css?v=1">
 </head>
 <body>
-<aside id="panel">
+<div id="map"></div>
+
+<aside id="panel" class="card">
   <header>
-    <h1>SIGN INVENTORY</h1>
-    <p class="sub">Street-level sign map with standard sign codes</p>
+    <h1>LA COUNTY STREET INVENTORY</h1>
+    <p class="sub">Signs, striping and markings from published agency records and street-level photos</p>
   </header>
 
-  <section class="step" id="step-area">
-    <h2><span>1</span>AREA</h2>
-    <div class="btns">
-      <button id="btn-test" class="primary">HUNTINGTON DR (SCANNED)</button>
-      <button id="btn-view">USE MAP VIEW</button>
-      <button id="btn-draw">DRAW BOX</button>
-    </div>
-    <p class="hint" id="area-hint">Pick the test area, or frame any area and use the map view.</p>
+  <label class="go"><span>GO TO</span>
+    <select id="city"><option value="">County view</option></select>
+  </label>
+
+  <section>
+    <h2>BUILD ORDER</h2>
+    <div class="row"><label><input type="checkbox" data-layer="tiles" checked>Priority tiles (1 km)</label></div>
+    <div class="ramp" id="ramp-p"></div>
+    <p class="note" id="tiles-note"></p>
   </section>
 
-  <section class="step" id="step-load">
-    <h2><span>2</span>LOAD</h2>
-    <div class="bar"><div id="bar-fill"></div></div>
-    <p class="status" id="status">Waiting for an area.</p>
+  <section>
+    <h2>AGENCY RECORDS</h2>
+    <div id="agency"></div>
+    <p class="note" id="agency-note"></p>
   </section>
 
-  <section class="step grow" id="step-inv">
-    <h2><span>3</span>INVENTORY <em id="inv-count"></em></h2>
-    <div class="legend">
-      <span><i class="dot verified"></i>HIGH CONFIDENCE</span>
-      <span><i class="dot review"></i>CHECK IN FIELD</span>
-      <span><i class="dot auto"></i>AUTO</span>
-      <span><i class="dot nomatch"></i>NO CODE</span>
-    </div>
-    <div class="tablewrap"><table id="inv"><thead><tr><th></th><th>CODE</th><th>SIGN</th><th>QTY</th></tr></thead><tbody></tbody></table></div>
+  <section>
+    <h2>STREET-LEVEL PHOTOS</h2>
+    <div class="row"><label><input type="checkbox" data-layer="photos">Photo coverage by year</label></div>
+    <div class="ramp" id="ramp-y" hidden></div>
+    <div class="row"><label><input type="checkbox" data-layer="mly">Signs detected by Mapillary</label><i class="chip" style="--c:#568CBB"></i></div>
+    <div class="row"><label><input type="checkbox" data-layer="fp" checked>FP sign inventory (read and coded)</label><i class="chip" style="--c:#1B795A"></i></div>
+    <p class="note">Mapillary signs and photos show from zoom 14. FP inventory areas: <a href="areas.html">open the area tool</a>.</p>
   </section>
 
-  <section class="step" id="step-export">
-    <h2><span>4</span>EXPORT</h2>
-    <div class="btns">
-      <button id="btn-pdf">PDF 11X17</button>
-      <button id="btn-xlsx">EXCEL</button>
-      <a id="btn-sheets" class="btnlink" target="_blank" rel="noopener" hidden>PLAN SHEETS</a>
-    </div>
+  <section class="base">
+    <h2>BASE MAP</h2>
+    <div class="seg"><button data-base="light" class="on">LIGHT</button><button data-base="aerial">AERIAL</button></div>
   </section>
+
+  <footer class="note">Sources: LA County Public Works (Operational Services), Mapillary (CC BY-SA), OpenStreetMap contributors, US Census TIGER/Line and LEHD LODES. Plan: <a href="PLAN.md">PLAN.md</a></footer>
 </aside>
 
-<main id="map"></main>
+<div id="hud" class="card" hidden></div>
 
-<!-- 11x17 sheet parts, shown only in print -->
-<img id="print-map" alt="">
-<section id="sheet-side">
-  <img class="wordmark" src="img/wordmark-slate.png" alt="Fehr &amp; Peers">
-  <h1 id="sheet-title">SIGN INVENTORY</h1>
-  <p id="sheet-meta"></p>
-  <table id="sheet-table"><thead><tr><th></th><th>CODE</th><th>SIGN</th><th>QTY</th></tr></thead><tbody></tbody></table>
-  <p id="sheet-notes"></p>
-</section>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="js/config.js?v=1795726262"></script>
-<script src="js/app.js?v=1795726262"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"></script>
+<script src="js/config.js?v=2"></script>
+<script src="js/map.js?v=1"></script>
 </body>
 </html>
