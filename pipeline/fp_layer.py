@@ -10,6 +10,7 @@ for f in sorted(glob.glob('data/areas/*/signs.json')):
                       'properties': {'id': s.get('id', ''), 'code': code or 'NAME SIGN', 'conf': s.get('conf', 0), 'status': s.get('status', ''),
                                      'seen': str(s.get('seen', '')), 'loc': s.get('loc', ''), 'dir': s.get('dir', 0), 'name': 1 if s.get('name') else 0,
                                      'crop': f"data/areas/{key}/crops/{s['crop']}" if s.get('crop') else '', 'img': s.get('img', ''),
-                                     'area': d.get('area', key), 'src': 'FP street-level inventory'}})
+                                     'area': d.get('area', key), 'src': 'FP street-level inventory',
+                                     'key': (s.get('code') or '').lower().replace('(', '').replace(')', '').replace(' ', ''), 'val': s.get('val', '')}})
 json.dump({'type': 'FeatureCollection', 'features': feats}, open('data/base/fp.geojson', 'w'), separators=(',', ':'))
 print(len(feats), 'signs from', len(glob.glob('data/areas/*/signs.json')), 'areas')

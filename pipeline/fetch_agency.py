@@ -37,6 +37,8 @@ def day(v):
     return str(v or '')[:10]
 
 summary = {}
+import collections
+key = lambda c: str(c or '').lower().replace('(', '').replace(')', '').replace(' ', '')
 for name, url, kind in LAYERS:
     meta = get(url, {'f': 'json'})
     n = get(url + '/query', {'where': '1=1', 'returnCountOnly': 'true', 'f': 'json'}).get('count', 0)
@@ -55,6 +57,7 @@ for name, url, kind in LAYERS:
                 'date': day(pick(p, 'LAST_MAINT_DATE', 'INSTALLDATE', 'INSTALL_DATE', 'LASTMODDATE')),
                 'loc': pick(p, 'LOCATION', 'STREET'),
                 'src': 'LA County Public Works', 'kind': kind}
+            f['properties']['key'] = key(f['properties']['code'])
             g = f.get('geometry') or {}
             if g.get('coordinates') and g['coordinates'] != [] and 'NaN' not in json.dumps(g['coordinates'])[:200]: feats.append(f)
             else: bad += 1
@@ -62,6 +65,7 @@ for name, url, kind in LAYERS:
         if len(got) < step: break
     print(f'  done: {len(feats)} kept, {bad} without location', flush=True)
     json.dump({'type': 'FeatureCollection', 'features': feats}, open(f'{OUT}/{name}.geojson', 'w'), separators=(',', ':'))
-    summary[name] = {'count': len(feats), 'no_location': bad, 'source': url, 'downloaded': time.strftime('%Y-%m-%d')}
+    kc = collections.Counter(f['properties']['key'] for f in feats)
+    summary[name] = {'keys': [k for k, _ in kc.most_common(400) if k], 'count': len(feats), 'no_location': bad, 'source': url, 'downloaded': time.strftime('%Y-%m-%d')}
 json.dump(summary, open(f'{OUT}/summary.json', 'w'), indent=1)
 print(json.dumps(summary, indent=1))
