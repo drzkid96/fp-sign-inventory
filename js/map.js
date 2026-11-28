@@ -63,16 +63,21 @@ function tag(text) {
 }
 const loading = new Set();
 async function face(k) {
-  if (!k || map.hasImage('sg:' + k) || loading.has(k)) return; loading.add(k);
+  if (!k || loading.has(k)) return; loading.add(k);
   try {
-    if (k.includes('@')) { const [c, v] = k.split('@'); map.addImage('sg:' + k, await svgImage(speedSVG(c, v), 128), {pixelRatio: 2}); return; }
+    const put = img => { if (map.hasImage('sg:' + k)) map.removeImage('sg:' + k); map.addImage('sg:' + k, img, {pixelRatio: 2}); };
+    if (k.startsWith('?')) { put(tag(k.slice(1).toUpperCase() + ' ?')); return; }
+    if (k.includes('@')) { const [c, v] = k.split('@'); put(await svgImage(speedSVG(c, v), 128)); return; }
     const cc = county(k);
-    if (cc?.face.startsWith('draw:')) { map.addImage('sg:' + k, await svgImage(drawSVG(cc.face.slice(5)), 128), {pixelRatio: 2}); return; }
+    if (cc?.face.startsWith('draw:')) { put(await svgImage(drawSVG(cc.face.slice(5)), 128)); return; }
     const r = cc ? cc.face : resolve(k); if (!r) throw 0;
-    const img = await map.loadImage(`assets/signs/${r}.png`); if (!map.hasImage('sg:' + k)) map.addImage('sg:' + k, img.data, {pixelRatio: 2});
+    put((await map.loadImage(`assets/signs/${r}.png`)).data);
   } catch (e) { if (!map.hasImage('sg:' + k)) map.addImage('sg:' + k, tag((IDX[k]?.code || k.split('@')[0]).toUpperCase()), {pixelRatio: 2}); }
 }
 map.on('styleimagemissing', e => { if (e.id.startsWith('sg:') && !map.hasImage(e.id)) map.addImage(e.id, tag(e.id.slice(3).split('@')[0].toUpperCase() || '?'), {pixelRatio: 2}); });
+const SERIES = {r1: 'Stop or yield', r2: 'Speed limit', r3: 'Lane use or turn', r4: 'Keep right or lane', r5: 'Do not enter or exclusion', r6: 'One way',
+  r7: 'Parking', r8: 'Parking', r9: 'Pedestrian', r10: 'Signal', r11: 'Road closed', r26: 'Parking', r28: 'Parking', w: 'Warning', sw: 'Warning', om: 'Object marker', d: 'Guide', sr: 'School', s: 'School', m: 'Route marker', g: 'Guide'};
+const seriesOf = k => { const m = String(k).match(/^([a-z]+)(\d*)/) || []; return SERIES[m[1] + m[2]] ? m[1] + m[2] : SERIES[m[1]] ? m[1] : null; };
 const trustOf = code => (TRUST[String(code || '').split('/')[0].split('(')[0].trim()] || {trust: 'untested'});
 
 map.on('load', async () => {
@@ -169,16 +174,17 @@ function merge() {
       recs.push({src: 'county', ll, fam: k, face: faceKey(k, v), p, op: 1}); }
     if (on('mly') && map.getSource('mlysign')) for (const f of map.querySourceFeatures('mlysign', {sourceLayer: 'traffic_sign'})) { const ll = f.geometry.coordinates; if (!inView(ll)) continue;
       const m = CMAP[f.properties.value]; if (!m) continue; const k = famKey(m.code); if (!k) continue; const t = trustOf(m.code).trust;
-      recs.push({src: 'mly', ll, fam: k, face: faceKey(k, m.val), p: f.properties, op: t === 'likely' ? 1 : t === 'mixed' ? 0.8 : 0.5}); }
+      const sure = t === 'likely' || t === 'mixed', ser = seriesOf(k);
+      recs.push({src: 'mly', ll, fam: sure ? k : (ser || k), face: sure ? faceKey(k, m.val) : '?' + (ser || k), unsure: !sure, p: f.properties, op: sure ? (t === 'likely' ? 1 : 0.85) : 0.7}); }
     const seen = new Set(), uniq = recs.filter(r => { const id = r.src + (r.p.id ?? r.ll.map(x => x.toFixed(6)).join()); if (seen.has(id)) return false; seen.add(id); return true; });
     uniq.sort((a, b) => ORDER.indexOf(a.src) - ORDER.indexOf(b.src));
     const groups = [];
     for (const r of uniq) {
-      const g = groups.find(g => g.fam === r.fam && !g.recs.some(x => x.src === r.src && r.src !== 'mly') && metres(g.ll, r.ll) < MERGE_M);
+      const g = groups.find(g => (g.fam === r.fam || (r.unsure && seriesOf(g.fam) === r.fam)) && !g.recs.some(x => x.src === r.src && r.src !== 'mly') && metres(g.ll, r.ll) < MERGE_M);
       if (g) g.recs.push(r); else groups.push({fam: r.fam, ll: r.ll, recs: [r]});
     }
     RAW = new Map(); const feats = groups.map((g, i) => { RAW.set(i, g); const top = g.recs[0], n = new Set(g.recs.map(r => r.src)).size;
-      const faceK = g.recs.find(r => r.face.includes('@') && !r.face.endsWith('@?'))?.face || top.face; face(faceK);
+      const sure = g.recs.filter(r => !r.unsure), faceK = (sure.find(r => r.face.includes('@') && !r.face.endsWith('@?')) || sure[0] || top).face; face(faceK);
       return {type: 'Feature', geometry: {type: 'Point', coordinates: top.ll}, properties: {gid: i, face: faceK, ring: SRC[top.src].c, n, op: n > 1 ? 1 : top.op, rank: ORDER.indexOf(top.src)}}; });
     shown = true; map.getSource('signs').setData({type: 'FeatureCollection', features: feats});
   }, 120);
@@ -239,19 +245,23 @@ function srcRow(r) {
 }
 function openCard(g) {
   if (!g) return; const top = g.recs[0], [lon, lat] = top.ll;
-  const best = g.recs.find(r => r.face.includes('@') && !r.face.endsWith('@?')) || top;
+  const sureRecs = g.recs.filter(r => !r.unsure), best = sureRecs.find(r => r.face.includes('@') && !r.face.endsWith('@?')) || sureRecs[0] || top;
+  const unsure = !sureRecs.length;
   const {code, val} = codeOf(best), k = famKey(code), cc = county(k);
   const info = cc ? {name: `${cc.name} · county code ${code}`, slug: cc.slug, svg: cc.slug && IDX[cc.slug]?.svg, note: cc.note, draw: cc.face.startsWith('draw:') && cc.face.slice(5)} : (IDX[resolve(k) || k] || IDX[k] || {});
-  const art = info.draw ? `<img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(drawSVG(info.draw))}" alt="">` : NUMERIC.includes(k) ? `<img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(speedSVG(k, val || '?'))}" alt="">`
+  const serName = SERIES[seriesOf(k)] || 'Sign';
+  if (unsure) { info.name = `${serName} sign. Mapillary's label (${code}) is often wrong for this kind of sign; check the photo.`; info.slug = null; info.svg = null; }
+  const art = unsure ? `<b>?</b>` : info.draw ? `<img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(drawSVG(info.draw))}" alt="">` : NUMERIC.includes(k) ? `<img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(speedSVG(k, val || '?'))}" alt="">`
     : info.svg ? `<img src="${SSS}${info.svg}" alt="">` : `<b>${esc(code)}</b>`;
   const srcs = [...new Set(g.recs.map(r => r.src))];
   const agree = srcs.length > 1 ? `<span class="badge lt">${srcs.length} SOURCES AGREE</span>` : '';
   const fpRec = g.recs.find(r => r.src === 'fp' && r.p.crop), mRec = g.recs.find(r => r.src === 'mly');
-  const photo = fpRec ? `<div class="photo"><img src="${esc(fpRec.p.crop)}" alt="Sign photo"><div class="cap">Photo ${esc(fpRec.p.seen)} · read by our sign model</div></div>`
+  const photo = fpRec ? `<div class="photo"><img src="${esc(fpRec.p.crop)}" alt="Sign photo"><div class="cap">${age(Date.parse(fpRec.p.seen) || Date.now())}Photo ${esc(fpRec.p.seen)} · read by our sign model</div></div>`
     : `<div class="photo" id="ph"><div class="msg">Loading photo…</div></div>`;
-  $('#card-body').innerHTML = `<div class="sc-head"><div class="sc-art">${art}</div><div><div class="sc-code">${esc(code || 'No code')}${val ? ` <span style="font-weight:500">(${esc(val)})</span>` : ''}</div>
+  $('#card-body').innerHTML = `<div class="sc-head"><div class="sc-art">${art}</div><div><div class="sc-code">${unsure ? esc(serName) + ' sign' : esc(code || 'No code') + (val ? ` <span style="font-weight:500">(${esc(val)})</span>` : '')}</div>
     <div class="sc-name">${esc(info.name || (top.src === 'county' ? top.p.desc : '') || '')}</div></div></div>${info.note ? `<p class="note-x">${esc(info.note)}</p>` : ''}
-    <div class="badges">${srcs.map(s => `<span class="badge" style="--c:${SRC[s].c}">${SRC[s].t.toUpperCase()}</span>`).join('')}${agree}</div>${photo}
+    <div class="badges">${srcs.map(s => `<span class="badge" style="--c:${SRC[s].c}">${SRC[s].t.toUpperCase()}</span>`).join('')}${agree}${unsure ? '<span class="badge warn">CODE NOT CONFIRMED</span>' : ''}</div>${photo}
+    ${top.src === 'mly' ? '<p class="note-x">Position estimated by Mapillary from the photos; it can be several meters off.</p>' : ''}
     <table class="facts">${g.recs.map(r => { const [a, b] = srcRow(r); return `<tr><td><b style="color:${SRC[r.src].c}">${SRC[r.src].t}</b><br>${a}</td><td>${b}</td></tr>`; }).join('')}</table>
     <div class="links">${info.slug ? `<a href="${SSS}/signs/${info.slug}/" target="_blank" rel="noopener">Standard</a>` : ''}<a href="${sv(lat, lon)}" target="_blank" rel="noopener">Street View</a><a href="${mlyAt(lat, lon)}" target="_blank" rel="noopener">Mapillary</a></div>`;
   $('#card').hidden = false; if (narrow()) fold(true);
@@ -260,6 +270,7 @@ function openCard(g) {
   map.getSource('sel').setData({type: 'Feature', geometry: {type: 'Point', coordinates: [lon, lat]}, properties: {}});
   if (!fpRec) mRec ? mlyPhoto(mRec.p.id) : nearPhoto(lon, lat);
 }
+const age = ms => { const y = (Date.now() - ms) / 3.156e10; return y >= 4 ? `<b class="old">${Math.floor(y)} years old, may be out of date.</b> ` : ''; };
 async function mlyPhoto(id) {
   const box = $('#ph'); if (!box) return;
   try {
@@ -270,7 +281,7 @@ async function mlyPhoto(id) {
     const bw = Math.max(bb[2] - bb[0], 0.01) * iw * pad, bh = Math.max(bb[3] - bb[1], 0.01) * ih * pad;
     const s = Math.min(W / bw, H / bh, 3), cx = (bb[0] + bb[2]) / 2 * iw * s, cy = (bb[1] + bb[3]) / 2 * ih * s;
     box.innerHTML = `<a href="${esc(i.thumb_1024_url)}" target="_blank" rel="noopener"><div class="crop" style="background-image:url('${i.thumb_1024_url}');background-size:${iw * s}px ${ih * s}px;background-position:${W / 2 - cx}px ${H / 2 - cy}px"></div></a>
-      <div class="cap">Photo ${day(i.captured_at)} · ${d.length} photo${d.length > 1 ? 's' : ''} saw this sign · tap for the full photo</div>`;
+      <div class="cap">${age(i.captured_at)}Photo ${day(i.captured_at)} · ${d.length} photo${d.length > 1 ? 's' : ''} saw this sign · tap for the full photo</div>`;
   } catch (e) { box.innerHTML = '<div class="msg">No photo available for this detection</div>'; }
 }
 async function nearPhoto(lon, lat) {
@@ -278,7 +289,7 @@ async function nearPhoto(lon, lat) {
   try {
     const d = (await graph('images', `fields=thumb_1024_url,captured_at&limit=10&bbox=${lon - r},${lat - r},${lon + r},${lat + r}`)).data || [];
     const i = d.sort((a, b) => b.captured_at - a.captured_at)[0]; if (!i) throw 0;
-    box.innerHTML = `<a href="${esc(i.thumb_1024_url)}" target="_blank" rel="noopener"><img src="${esc(i.thumb_1024_url)}" alt="Nearest street photo"></a><div class="cap">Nearest street photo, ${day(i.captured_at)} (not matched to this sign)</div>`;
+    box.innerHTML = `<a href="${esc(i.thumb_1024_url)}" target="_blank" rel="noopener"><img src="${esc(i.thumb_1024_url)}" alt="Nearest street photo"></a><div class="cap">${age(i.captured_at)}Nearest street photo, ${day(i.captured_at)} (not matched to this sign)</div>`;
   } catch (e) { box.innerHTML = '<div class="msg">No street photo within 25 m</div>'; }
 }
 function mvtBox(b64) {
