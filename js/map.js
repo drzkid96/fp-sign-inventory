@@ -52,7 +52,7 @@ map.on('load', async () => {
   const box = $('#agency');
   Object.entries(AG).forEach(([k, a]) => {
     const n = agency && agency['county_' + k] ? agency['county_' + k].count : null;
-    box.insertAdjacentHTML('beforeend', `<div class="row${n == null ? ' off' : ''}"><label><input type="checkbox" data-layer="ag-${k}" ${n == null ? 'disabled' : k === 'signs' ? '' : ''}>${a.label}${n != null ? ` <span class="note">(${n.toLocaleString()})</span>` : ''}</label><i class="chip${a.type === 'line' ? ' line' : ''}" style="--c:${a.color}"></i></div>`);
+    box.insertAdjacentHTML('beforeend', `<div class="row${!n ? ' off' : ''}"><label><input type="checkbox" data-layer="ag-${k}" ${!n ? 'disabled' : ''}>${a.label}${n ? ` <span class="note">(${n.toLocaleString()})</span>` : n === 0 ? ' <span class="note">(not public)</span>' : ''}</label><i class="chip${a.type === 'line' ? ' line' : ''}" style="--c:${a.color}"></i></div>`);
   });
   if (agency) {
     const any = Object.values(agency)[0];
