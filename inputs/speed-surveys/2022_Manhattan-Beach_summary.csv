@@ -1,0 +1,63 @@
+# city: Manhattan Beach
+# year: 2022
+# title: 2022 Volume and Speed Counts (Engineering and Traffic Survey summary table)
+# source: https://www.manhattanbeach.gov/home/showpublisheddocument/53536/638369612250170000
+# method: city website refuses automated downloads; table transcribed by Claude from the published PDF, directional volumes checked against printed totals
+street,from,to,segment,p50,p85,pace,pct_in_pace,nb_eb_daily,sb_wb_daily,total_volume,posted
+Ardmore Avenue,Boundary Pl.,Manhattan Beach Bl.,1,32,36,27-36,76,5404,5404,,30
+Ardmore Avenue,Manhattan Beach Bl.,19th St.,2,26,30,21-30,82,3431,1131,4562,30
+Ardmore Avenue,19th St.,Pacific Ave.,3,33,38,28-37,70,3202,920,4122,30
+Ardmore Avenue,Pacific Ave.,33rd St.,4,29,33,26-35,65,2826,801,3627,30
+Artesia Boulevard,Sepulveda Bl.,Peck Ave.,5,34,41,32-41,58,13425,13076,26501,40
+Artesia Boulevard,Peck Ave.,Aviation Way,6,35,40,31-40,73,12747,12321,25068,40
+Aviation Boulevard,Artesia Bl.,2nd St.,7,38,43,34-43,77,16416,16879,33295,40
+Aviation Boulevard,2nd St.,Manhattan Beach Bl.,8,35,42,30-39,51,17940,18254,36194,40
+Aviation Boulevard,Manhattan Beach Bl.,Marine Ave.,9,39,46,34-43,51,18437,19542,37979,40
+Aviation Boulevard,Marine Ave.,Rosecrans Ave.,10,37,44,32-41,61,19969,20546,40515,40
+Blanche Road,Valley Dr.,24th St.,11,22,26,18-27,85,1323,1542,2865,25
+Blanche Road,24th St.,Rosecrans Ave.,12,24,29,20-29,73,1473,1581,3054,25
+Highland Avenue,Homer St.,9th St.,13,22,29,16-25,69,1853,2591,4444,25
+Highland Avenue,9th St.,15th St.,14,16,20,11-20,87,2669,3086,5755,30
+Highland Avenue,15th St.,Marine Ave.,15,21,26,15-24,79,6975,7271,14246,25
+Highland Avenue,Marine Ave.,Rosecrans Ave.,16,26,30,21-30,76,6833,7068,13901,25
+Highland Avenue,Rosecrans Ave.,45th St.,17,26,32,22-31,61,10021,7391,17412,30
+Manhattan Avenue,Homer St.,9th St.,18,24,28,18-27,77,3949,2964,6913,30
+Manhattan Avenue,9th St.,15th St.,19,14,18,10-19,91,2094,1885,3979,25
+Manhattan Avenue,Marine Ave.,27th St.,20,22,26,17-26,73,657,808,1465,25
+Manhattan Avenue,27th St.,Rosecrans Ave.,21,22,27,16-25,74,956,899,1855,25
+Manhattan Beach Boulevard,Ocean Dr.,Highland Ave.,22,15,20,10-19,82,2521,2470,4991,25
+Manhattan Beach Boulevard,Highland Ave.,Valley Dr.,23,16,21,10-19,80,4102,2863,6965,25
+Manhattan Beach Boulevard,Valley Dr.,Pacific Ave.,24,30,36,28-37,63,7113,7486,14599,30
+Manhattan Beach Boulevard,Pacific Ave.,Sepulveda Bl.,25,29,35,25-34,62,10928,10728,21656,35
+Manhattan Beach Boulevard,Sepulveda Bl.,Peck Ave.,26,36,42,32-41,64,11025,11340,22365,35
+Manhattan Beach Boulevard,Peck Ave.,Aviation Bl.,27,36,43,31-42,58,11586,11398,22984,35
+Marine Avenue,Ocean Dr.,Highland Ave.,28,19,23,15-24,88,1530,1004,2534,25
+Marine Avenue,Highland Ave.,Valley Dr.,29,25,28,20-29,82,1790,1486,3276,25
+Marine Avenue,Ardmore Ave.,Sepulveda Bl.,30,25,29,22-31,79,3235,3360,6595,25
+Marine Avenue,Sepulveda Bl.,Meadows Ave.,31,36,41,32-41,68,8206,7819,16025,35
+Marine Avenue,Meadows Ave.,Aviation Bl.,32,33,42,25-34,45,8418,7972,16390,35
+Meadows Avenue,Artesia Bl.,2nd St.,33,27,32,22-31,73,1612,1665,3277,25
+Meadows Avenue,2nd St.,Manhattan Beach Bl.,34,24,28,20-29,76,1153,1406,2559,25
+Meadows Avenue,Manhattan Beach Bl.,Marine Ave.,35,23,28,18-27,73,937,1058,1995,25
+Pacific Avenue,5th St.,Manhattan Beach Blvd.,36,24,29,19-28,63,517,668,1185,25
+Pacific Avenue,Manhattan Beach Bl.,17th St.,37,24,28,19-28,86,1856,1948,3804,25
+Pacific Avenue,17th St.,Marine Ave.,38,22,26,18-27,81,2073,1968,4041,25
+Pacific Avenue,Valley Dr.,Rosecrans Ave.,39,25,30,20-29,74,1641,1402,3043,25
+Peck Avenue,Artesia Bl.,2nd St.,40,22,27,17-26,78,1398,1608,3006,25
+Peck Avenue,2nd St.,Manhattan Beach Bl.,41,22,28,16-25,78,719,727,1446,25
+Peck Avenue,Manhattan Beach Bl.,12th St.,42,18,23,15-24,91,1107,1180,2287,25
+Peck Avenue,18th St.,Marine Ave.,43,16,19,12-21,91,235,342,577,25
+Redondo Avenue,Artesia Bl.,2nd St.,44,28,33,24-33,72,1018,799,1817,25
+Redondo Avenue,2nd St.,Manhattan Beach Bl.,45,19,22,15-24,96,1269,1278,2547,25
+Redondo Avenue,Manhattan Beach Bl.,Marine Ave.,46,28,33,24-33,75,1500,1620,3120,25
+Rosecrans Avenue,Ocean Dr.,Highland Ave.,47,19,25,15-24,85,1764,1266,3030,25
+Rosecrans Avenue,Highland Ave.,Blanche Rd.,48,41,47,35-44,59,7658,8186,15844,35
+Rosecrans Avenue,Blanche Rd.,Sepulveda Bl.,49,40,47,38-47,88,9463,9680,19143,40
+Rosecrans Avenue,Sepulveda Bl.,Market Pl.,50,37,43,33-42,66,17738,18943,36681,40
+Rosecrans Avenue,Market Pl.,Aviation Bl.,51,29,36,22-31,55,21933,22471,44404,40
+2nd Street,Sepulveda Bl.,Peck Ave.,52,26,30,21-30,82,1945,1925,3870,25
+2nd Street,Peck Ave.,Aviation Bl.,53,24,28,20-29,85,1525,1253,2778,25
+Valley Drive,Boundary Pl.,10th St.,54,31,36,29-38,70,5940,5940,,30
+Valley Drive,10th St.,13th St.,55,24,28,17-26,65,6559,6559,,25
+Valley Drive,13th St.,Blanche Rd.,56,24,28,20-29,79,4910,2363,7273,25
+Valley Drive,Blanche Rd.,Sepulveda Bl.,57,30,35,25-34,75,1746,3774,5520,30

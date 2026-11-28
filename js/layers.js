@@ -12,6 +12,7 @@
   const size = st => { const s = st.stops || [[0, 4]]; if (!st.metric || s.length < 2) return s[0][1];
     return ['interpolate', ['linear'], ['to-number', ['get', st.metric], 0], ...s.flat()]; };
 
+  const zs = (v, z1, a, z2, b) => ['interpolate', ['linear'], ['zoom'], z1, typeof v === 'number' ? v * a : ['*', v, a], z2, typeof v === 'number' ? v * b : ['*', v, b]];
   async function init() {
     const get = (u, d) => fetch(u + V).then(r => r.ok ? r.json() : d).catch(() => d);
     [REG, IDX] = await Promise.all([get('data/layers.json', null), get('data/layers/index.json', {})]);
@@ -38,11 +39,11 @@
       }
       if (l.geom === 'line') {
         add({id: `dl-${l.id}-line`, type: 'line', filter: ['==', ['geometry-type'], 'LineString'], layout: {'line-cap': 'round'},
-          paint: {'line-color': c, 'line-width': ['*', size(st), ['interpolate', ['linear'], ['zoom'], 10, 0.6, 16, 1.6]], 'line-opacity': 0.85}});
+          paint: {'line-color': c, 'line-width': zs(size(st), 10, 0.6, 16, 1.6), 'line-opacity': 0.85}});
       }
       if (l.geom !== 'polygon') {
         add({id: `dl-${l.id}-pt`, type: 'circle', filter: ['==', ['geometry-type'], 'Point'],
-          paint: {'circle-color': c, 'circle-radius': ['*', size(st), ['interpolate', ['linear'], ['zoom'], 10, 0.7, 17, 1.5]], 'circle-stroke-color': '#fff', 'circle-stroke-width': 1, 'circle-opacity': 0.9}});
+          paint: {'circle-color': c, 'circle-radius': zs(size(st), 10, 0.7, 17, 1.5), 'circle-stroke-color': '#fff', 'circle-stroke-width': 1, 'circle-opacity': 0.9}});
       }
       if (st.label) add({id: `dl-${l.id}-lbl`, type: 'symbol', minzoom: Math.max(minz, 14), layout: {'text-field': label(st.label), 'text-font': ['Noto Sans Bold'], 'text-size': 11,
         'symbol-placement': l.geom === 'line' ? 'line' : 'point', 'text-offset': l.geom === 'line' ? [0, -0.9] : [0, -1.2], 'text-allow-overlap': false},

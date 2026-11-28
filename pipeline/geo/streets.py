@@ -35,7 +35,8 @@ class Streets:
         self.r = r; self.by = {k: g for k, g in r.groupby('k')}; self.byb = {k: g for k, g in r.groupby('b')}
         self.places = None
         if places_zip:
-            p = gpd.read_file(places_zip, columns=['NAME']).to_crs(2229); self.places = {n.lower(): g.geometry.union_all() for n, g in p.groupby('NAME')}
+            p = gpd.read_file(places_zip, columns=['NAME', 'CLASSFP']).to_crs(2229); self.places = {n.lower(): g.geometry.union_all() for n, g in p.groupby('NAME')}
+            self.incorp = p[p.CLASSFP.str.startswith('C')].geometry.union_all()
 
     def lines(self, name, area=None):
         k = norm(name); g = self.by.get(k)
@@ -56,8 +57,9 @@ class Streets:
             if pa.distance(pb) < 60: pts = [Point((pa.x + pb.x) / 2, (pa.y + pb.y) / 2)]
         return pts
 
-    def segment(self, street, frm, to, city=None):
+    def segment(self, street, frm, to, city=None, prefer_uninc=False):
         """-> dict(line, mid, how) in WGS84, or None. how: 'both' (two limits found), 'one' (one limit found)"""
+        self._uninc = prefer_uninc
         g = self._segment(street, frm, to, self.area(city))
         if (g is None or g['how'] != 'both') and city:            # street may sit just outside the city line
             g2 = self._segment(street, frm, to, None)
@@ -77,7 +79,10 @@ class Streets:
         if best:
             _, p, q = best; geom = self._along(s, p, q); how = 'both'
         elif c1 or c2:
-            p = (c1 or c2)[0]; geom = Point(p); how = 'one'
+            cs = c1 or c2
+            if getattr(self, '_uninc', False) and getattr(self, 'incorp', None) is not None:
+                cs = sorted(cs, key=lambda p: self.incorp.contains(p))
+            p = cs[0]; geom = Point(p); how = 'one'
         else: return None
         mid = geom.interpolate(0.5, normalized=True) if geom.geom_type == 'LineString' else geom
         to84 = lambda g: gpd.GeoSeries([g], crs=2229).to_crs(4326).iloc[0]
