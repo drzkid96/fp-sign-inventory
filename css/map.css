@@ -35,3 +35,7 @@ footer{border-top:1px solid var(--cream);margin-top:14px;padding-top:10px}
 .pop .tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.5px;padding:2px 6px;border-radius:3px;background:var(--pale);color:var(--emerald)}
 .pop .tag.rv{background:#ffe3d6;color:#a33d0d}
 @media (max-width:640px){#panel{width:calc(100% - 28px);max-height:46%}}
+.chip.hollow{background:#fff;box-shadow:0 0 0 2px var(--c)}
+.trust{display:flex;flex-wrap:wrap;gap:4px 12px;margin:2px 0 0 23px;font-size:11px}
+.trust span{display:flex;align-items:center;gap:5px}
+.trust .chip{width:11px;height:11px;border-width:1px}

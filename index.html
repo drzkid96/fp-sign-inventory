@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:ital,wght@0,300..700;1,400..700&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="css/map.css?v=1">
+<link rel="stylesheet" href="css/map.css?v=2">
 </head>
 <body>
 <div id="map"></div>
@@ -39,9 +39,18 @@
     <h2>STREET-LEVEL PHOTOS</h2>
     <div class="row"><label><input type="checkbox" data-layer="photos">Photo coverage by year</label></div>
     <div class="ramp" id="ramp-y" hidden></div>
-    <div class="row"><label><input type="checkbox" data-layer="mly">Signs detected by Mapillary</label><i class="chip" style="--c:#568CBB"></i></div>
-    <div class="row"><label><input type="checkbox" data-layer="fp" checked>FP sign inventory (read and coded)</label><i class="chip" style="--c:#1B795A"></i></div>
-    <p class="note">Mapillary signs and photos show from zoom 14. FP inventory areas: <a href="areas.html">open the area tool</a>.</p>
+  </section>
+
+  <section>
+    <h2>SIGNS</h2>
+    <div class="row"><label><input type="checkbox" data-layer="fp" checked>Scanned and coded (our model)</label><i class="chip" style="--c:#1B795A"></i></div>
+    <div class="row"><label><input type="checkbox" data-layer="mly" checked>Instant base, county-wide (Mapillary)</label></div>
+    <div class="trust">
+      <span><i class="chip" style="--c:#568CBB"></i>Likely right</span>
+      <span><i class="chip hollow" style="--c:#568CBB"></i>Mixed</span>
+      <span><i class="chip hollow" style="--c:#9FB3B8"></i>Often wrong or untested</span>
+    </div>
+    <p class="note" id="trust-note">Instant signs are Mapillary's own detections, translated to CA MUTCD codes. Each code is graded against our scanned areas. Shows from zoom 14; codes show from zoom 17.</p>
   </section>
 
   <section class="base">
@@ -57,6 +66,6 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"></script>
 <script src="js/config.js?v=2"></script>
-<script src="js/map.js?v=4"></script>
+<script src="js/map.js?v=5"></script>
 </body>
 </html>

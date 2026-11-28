@@ -4,7 +4,7 @@ One county map of traffic signs, striping, pavement markings and curb, built fir
 
 ## GOAL
 
-- **Base (pass 1):** the best county-wide inventory that existing records and existing photos allow, every feature with its source, date and confidence.
+- **Base (pass 1):** the best county-wide inventory that existing records and existing photos allow, every feature with its source, date and confidence. It starts from Mapillary's existing detections (instant), then our model visually re-reads and fixes each code.
 - **Projects (pass 2):** project corridors captured by car with a 360 camera, which verify, update and add to the base where the project needs it.
 - **Outputs:** the county map (this site), 1" = 30' plan sheets, Excel tables, the OSM intersection check.
 
@@ -53,9 +53,9 @@ Not used: Google Street View imagery for extraction (its terms forbid creating d
 | Phase | Work | Output |
 |---|---|---|
 | 0. Pre-build | Data inventory by jurisdiction in build order; record format; Mapillary rate limits and runner timing on one P1 tile; accuracy against the county inventory; aerial license | Coverage matrix and a go/no-go page |
-| 1. Presentation map | This site: build order tiles, agency layers, photo coverage by year, Mapillary and FP sign layers, Street View link-out | Live now |
-| 2. Base merge, P1 | Agency layers + OSM + Mapillary detections + our sign model on existing photos, merged by the rules above, tile by tile | P1 tiles complete with sources and dates |
-| 3. Base, P2 to P5 | Same, nightly in the cloud, in build order | County base |
+| 1. Instant base | Mapillary's existing sign detections county-wide, translated to CA MUTCD codes and graded per code against our scanned areas (trust table: likely, mixed, often wrong) | Live now |
+| 2. Visual code fix | Our sign model re-reads every existing instant sign from its own photos (Mapillary's per-image detection boxes give the crops) and fixes the code; agency records merged by the rules above; tile by tile in build order, nightly in the cloud | Every instant sign re-coded, with confidence and photo date |
+| 3. Fill gaps | Find signs Mapillary never detected (parking, bike, CA-specific) with our own detector on the same photos | Missed signs added |
 | 4. Markings and curb | Marking detector and curb attributes from photos; geometry from an aerial source that allows tracing | Marking and curb layers |
 | 5. Projects | Car capture on project corridors (GoPro MAX 2, 8K 360 video), upload to Mapillary, rerun the corridor | Current-condition corridor inventory and plan sheets |
 

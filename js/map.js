@@ -16,7 +16,7 @@ const day = ms => ms ? new Date(+ms).toISOString().slice(0, 10) : '';
 const proto = new pmtiles.Protocol(); maplibregl.addProtocol('pmtiles', proto.tile);
 const map = new maplibregl.Map({
   container: 'map', center: [-118.25, 34.05], zoom: 9.2, minZoom: 8, maxZoom: 20, hash: true, attributionControl: {compact: true},
-  style: {version: 8, glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf', sources: {
+  style: {version: 8, glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf', sources: {
     light: {type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 19, attribution: '© OpenStreetMap contributors'},
     aerial: {type: 'raster', tiles: ['https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 16, attribution: 'Imagery: USGS The National Map'},
     hires: {type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 20, attribution: 'Imagery © Esri'}},
@@ -67,9 +67,29 @@ map.on('load', async () => {
   } else $('#agency-note').textContent = 'County sign, striping, marking and signal records are being downloaded in the cloud; they appear here when the run finishes.';
 
   // Mapillary detected signs (live) and the FP inventory
+  // Mapillary detected signs (live), translated to CA MUTCD codes and graded by the trust table
+  const [CMAP, TRUST] = await Promise.all([fetch('data/classmap.json' + V).then(r => r.json()), fetch('data/base/trust.json' + V).then(r => r.json()).catch(() => ({codes: {}}))]);
+  const fam = c => (c || '').split('/')[0].split('(')[0].trim();
+  window.MLYMAP = CMAP; window.TRUST = TRUST.codes;
+  const byTrust = {likely: [], mixed: [], low: []}, toCode = [];
+  for (const [v, m] of Object.entries(CMAP)) {
+    const c = fam(m.code); if (!c) continue; toCode.push(v, c + (m.val ? ' (' + m.val + ')' : ''));
+    const t = (TRUST.codes[c] || {}).trust; if (byTrust[t]) byTrust[t].push(v);
+  }
+  const trustX = ['match', ['get', 'value']]; for (const k of ['likely', 'mixed', 'low']) if (byTrust[k].length) trustX.push(byTrust[k], k); trustX.push('other');
+  const codeX = ['match', ['get', 'value'], ...toCode, ''];
   map.addSource('mlysign', {type: 'vector', tiles: [`https://tiles.mapillary.com/maps/vtp/mly_map_feature_traffic_sign/2/{z}/{x}/{y}?access_token=${C.MLY}`], minzoom: 14, maxzoom: 14});
   map.addLayer({id: 'mly', type: 'circle', source: 'mlysign', 'source-layer': 'traffic_sign', minzoom: 14, layout: {visibility: 'none'},
-    paint: {'circle-color': '#568CBB', 'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, 2.5, 19, 6], 'circle-stroke-color': '#fff', 'circle-stroke-width': 1}});
+    filter: ['!=', codeX, ''],
+    paint: {'circle-color': ['match', trustX, 'likely', '#568CBB', 'mixed', '#ffffff', '#ffffff'],
+            'circle-stroke-color': ['match', trustX, 'likely', '#ffffff', 'mixed', '#568CBB', '#9FB3B8'],
+            'circle-stroke-width': ['match', trustX, 'likely', 1, 2],
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, ['match', trustX, 'likely', 3, 'mixed', 2.6, 2], 19, ['match', trustX, 'likely', 7, 'mixed', 6, 4.5]]}});
+  map.addLayer({id: 'mly-lab', type: 'symbol', source: 'mlysign', 'source-layer': 'traffic_sign', minzoom: 17, layout: {visibility: 'none',
+    'text-field': codeX, 'text-font': ['Noto Sans Bold'], 'text-size': 11, 'text-offset': [0, 1.1], 'text-anchor': 'top', 'text-allow-overlap': false},
+    paint: {'text-color': '#00242E', 'text-halo-color': '#ffffff', 'text-halo-width': 1.6}});
+  groups.mly = ['mly', 'mly-lab'];
+  window.MLYX = {trustX, codeX};
   map.addSource('fp', {type: 'geojson', data: 'data/base/fp.geojson' + V});
   map.addLayer({id: 'fp', type: 'circle', source: 'fp', paint: {
     'circle-color': ['case', ['==', ['get', 'name'], 1], '#9FB3B8', '#1B795A'],
@@ -124,7 +144,13 @@ map.on('click', e => {
   const id = f.layer.id;
   if (id === 'fp') pop(e, `<h3>${esc(p.code)}</h3><span class="tag${p.status === 'review' ? ' rv' : ''}">${p.status === 'review' ? 'CHECK IN FIELD' : p.name ? 'STREET NAME' : 'HIGH CONFIDENCE'}</span>${p.crop ? `<img src="${p.crop}" alt="">` : ''}` +
     rows({Location: esc(p.loc), Photo: esc(p.seen), Confidence: p.conf ? Math.round(p.conf * 100) + '%' : '', Area: esc(p.area), Source: 'FP street-level inventory'}) + links(lat, lon, p.dir));
-  else if (id === 'mly') pop(e, `<h3>${esc(p.value)}</h3>` + rows({'First seen': day(p.first_seen_at), 'Last seen': day(p.last_seen_at), Source: 'Mapillary detection (not yet coded to CA MUTCD)'}) + links(lat, lon));
+  else if (id === 'mly') {
+    const m = MLYMAP[p.value] || {}, c = (m.code || '').split('/')[0].split('(')[0].trim(), t = TRUST[c] || {trust: 'untested'};
+    const TT = {likely: 'LIKELY RIGHT', mixed: 'MIXED', low: 'OFTEN WRONG', untested: 'NOT YET TESTED'};
+    pop(e, `<h3>${esc(c)}${m.val ? ' (' + esc(m.val) + ')' : ''}</h3><span class="tag${t.trust === 'likely' ? '' : ' rv'}">${TT[t.trust]}</span>` +
+      rows({'Agreement': t.found != null ? `found ${Math.round(t.found * 100)}% of our ${t.ours} scanned ${esc(c)} signs` : '', 'Precision': t.precision != null ? Math.round(t.precision * 100) + '% of its ' + esc(c) + ' calls match ours' : '',
+            'Mapillary class': esc(p.value), 'First seen': day(p.first_seen_at), 'Last seen': day(p.last_seen_at), Source: 'Mapillary detection, code translated, not yet read by our model'}) + links(lat, lon));
+  }
   else if (id.startsWith('ag-')) pop(e, `<h3>${esc(p.code || AG[id.slice(3)].label)}</h3>` + rows({Description: esc(p.desc), Location: esc(p.loc), Status: esc(p.status), Date: esc(p.date), Source: esc(p.src)}) + links(lat, lon));
   else if (id === 'ph-img') pop(e, rows({Photo: day(p.captured_at), Type: p.is_pano ? '360' : 'Flat'}) + links(lat, lon));
   else if (id === 'tiles-fill') pop(e, `<h3>${esc(p.city)} · P${p.p}</h3>` + rows({'Build order': '#' + p.rank.toLocaleString(), 'Arterial km': p.art, 'All street km': p.loc, Urban: Math.round(p.urban * 100) + '%', 'Jobs + residents': (p.jobs + p.res).toLocaleString()}));

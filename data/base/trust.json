@@ -1,0 +1,380 @@
+{
+ "areas": [
+  "GLENOAKS BLVD, BURBANK",
+  "DOWNTOWN CULVER CITY",
+  "HUNTINGTON DR, EL SERENO, LOS ANGELES"
+ ],
+ "codes": {
+  "G20-2": {
+   "trust": "untested",
+   "ours": 4,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  },
+  "OM1-1": {
+   "trust": "mixed",
+   "ours": 37,
+   "found": 0.76,
+   "mly": 49,
+   "precision": 0.55
+  },
+  "R1-1": {
+   "trust": "likely",
+   "ours": 100,
+   "found": 0.96,
+   "mly": 125,
+   "precision": 0.84
+  },
+  "R1-2": {
+   "trust": "untested",
+   "ours": 0,
+   "found": null,
+   "mly": 10,
+   "precision": 0.0
+  },
+  "R10-11": {
+   "trust": "low",
+   "ours": 15,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  },
+  "R10-12": {
+   "trust": "likely",
+   "ours": 24,
+   "found": 0.96,
+   "mly": 33,
+   "precision": 0.82
+  },
+  "R10-15": {
+   "trust": "untested",
+   "ours": 3,
+   "found": 0.33,
+   "mly": 1,
+   "precision": null
+  },
+  "R10-6": {
+   "trust": "untested",
+   "ours": 0,
+   "found": null,
+   "mly": 10,
+   "precision": 0.0
+  },
+  "R10-7": {
+   "trust": "mixed",
+   "ours": 9,
+   "found": 1.0,
+   "mly": 9,
+   "precision": 0.56
+  },
+  "R11-2": {
+   "trust": "untested",
+   "ours": 0,
+   "found": null,
+   "mly": 1,
+   "precision": null
+  },
+  "R2-1": {
+   "trust": "mixed",
+   "ours": 76,
+   "found": 0.66,
+   "mly": 127,
+   "precision": 0.55
+  },
+  "R3-1": {
+   "trust": "untested",
+   "ours": 1,
+   "found": 1.0,
+   "mly": 4,
+   "precision": null
+  },
+  "R3-17": {
+   "trust": "mixed",
+   "ours": 28,
+   "found": 0.54,
+   "mly": 13,
+   "precision": 0.77
+  },
+  "R3-18": {
+   "trust": "untested",
+   "ours": 3,
+   "found": 0.0,
+   "mly": 1,
+   "precision": null
+  },
+  "R3-2": {
+   "trust": "low",
+   "ours": 13,
+   "found": 0.38,
+   "mly": 11,
+   "precision": 0.36
+  },
+  "R3-4": {
+   "trust": "likely",
+   "ours": 24,
+   "found": 0.92,
+   "mly": 28,
+   "precision": 0.75
+  },
+  "R3-5": {
+   "trust": "low",
+   "ours": 6,
+   "found": 0.17,
+   "mly": 3,
+   "precision": null
+  },
+  "R3-6": {
+   "trust": "untested",
+   "ours": 1,
+   "found": 1.0,
+   "mly": 1,
+   "precision": null
+  },
+  "R3-7": {
+   "trust": "likely",
+   "ours": 17,
+   "found": 0.88,
+   "mly": 19,
+   "precision": 0.95
+  },
+  "R3-8": {
+   "trust": "mixed",
+   "ours": 6,
+   "found": 0.5,
+   "mly": 6,
+   "precision": 0.5
+  },
+  "R4-7": {
+   "trust": "mixed",
+   "ours": 33,
+   "found": 0.94,
+   "mly": 60,
+   "precision": 0.58
+  },
+  "R4-7a": {
+   "trust": "untested",
+   "ours": 1,
+   "found": 1.0,
+   "mly": 1,
+   "precision": null
+  },
+  "R5-1": {
+   "trust": "likely",
+   "ours": 35,
+   "found": 0.97,
+   "mly": 45,
+   "precision": 0.78
+  },
+  "R5-2": {
+   "trust": "low",
+   "ours": 9,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  },
+  "R6-1": {
+   "trust": "low",
+   "ours": 36,
+   "found": 0.47,
+   "mly": 18,
+   "precision": 0.83
+  },
+  "R6-2": {
+   "trust": "likely",
+   "ours": 33,
+   "found": 0.88,
+   "mly": 30,
+   "precision": 0.8
+  },
+  "R7-1": {
+   "trust": "low",
+   "ours": 16,
+   "found": 0.0,
+   "mly": 11,
+   "precision": 0.0
+  },
+  "R7-2": {
+   "trust": "low",
+   "ours": 18,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  },
+  "R7-4a": {
+   "trust": "low",
+   "ours": 36,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  },
+  "R8-3": {
+   "trust": "untested",
+   "ours": 3,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  },
+  "R9-20": {
+   "trust": "untested",
+   "ours": 2,
+   "found": 1.0,
+   "mly": 2,
+   "precision": null
+  },
+  "R9-3": {
+   "trust": "low",
+   "ours": 30,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  },
+  "R9-3a": {
+   "trust": "untested",
+   "ours": 0,
+   "found": null,
+   "mly": 7,
+   "precision": 0.0
+  },
+  "R99C": {
+   "trust": "low",
+   "ours": 10,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  },
+  "S5-2": {
+   "trust": "untested",
+   "ours": 2,
+   "found": 1.0,
+   "mly": 4,
+   "precision": null
+  },
+  "SR4-1": {
+   "trust": "low",
+   "ours": 25,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  },
+  "SW24-1": {
+   "trust": "low",
+   "ours": 6,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  },
+  "SW24-3": {
+   "trust": "untested",
+   "ours": 3,
+   "found": 1.0,
+   "mly": 18,
+   "precision": 0.28
+  },
+  "W1-1": {
+   "trust": "untested",
+   "ours": 0,
+   "found": null,
+   "mly": 1,
+   "precision": null
+  },
+  "W1-7": {
+   "trust": "untested",
+   "ours": 0,
+   "found": null,
+   "mly": 1,
+   "precision": null
+  },
+  "W1-8": {
+   "trust": "untested",
+   "ours": 0,
+   "found": null,
+   "mly": 27,
+   "precision": 0.0
+  },
+  "W11-2": {
+   "trust": "mixed",
+   "ours": 9,
+   "found": 0.67,
+   "mly": 16,
+   "precision": 0.81
+  },
+  "W11-8": {
+   "trust": "likely",
+   "ours": 5,
+   "found": 1.0,
+   "mly": 5,
+   "precision": 0.8
+  },
+  "W12-1": {
+   "trust": "untested",
+   "ours": 4,
+   "found": 0.75,
+   "mly": 4,
+   "precision": null
+  },
+  "W13-1P": {
+   "trust": "untested",
+   "ours": 3,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  },
+  "W14-2": {
+   "trust": "untested",
+   "ours": 2,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  },
+  "W20-1": {
+   "trust": "low",
+   "ours": 7,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  },
+  "W21-1": {
+   "trust": "untested",
+   "ours": 0,
+   "found": null,
+   "mly": 1,
+   "precision": null
+  },
+  "W3-1": {
+   "trust": "untested",
+   "ours": 4,
+   "found": 1.0,
+   "mly": 6,
+   "precision": 0.83
+  },
+  "W3-3": {
+   "trust": "untested",
+   "ours": 0,
+   "found": null,
+   "mly": 1,
+   "precision": null
+  },
+  "W31": {
+   "trust": "untested",
+   "ours": 1,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  },
+  "W5-1": {
+   "trust": "untested",
+   "ours": 2,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  },
+  "W74-1": {
+   "trust": "untested",
+   "ours": 1,
+   "found": 0.0,
+   "mly": 0,
+   "precision": null
+  }
+ }
+}
