@@ -1,0 +1,52 @@
+{
+ "id": "ladot_walkbike",
+ "title": "LADOT Walk & Bike Count",
+ "group": "active",
+ "geom": "point",
+ "kind": "observed",
+ "count": 248,
+ "dropped": {
+  "before_limit": 0,
+  "undated": 0,
+  "no_location": 0,
+  "outside_county": 0
+ },
+ "built": "2026-11-28T12:27Z",
+ "source": {
+  "name": "LADOT Walk & Bike Count 2021, 2023, 2025",
+  "agency": "LADOT",
+  "url": "https://data.lacity.org/d/hiwe-xzrt",
+  "license": "Los Angeles Open Data"
+ },
+ "source_fields": null,
+ "seconds": 10,
+ "years": {
+  "2021": 93,
+  "2023": 76,
+  "2025": 79
+ },
+ "not_located": [
+  "2021 Arroyo Seco Bike Path (Via Marisol / Ave 60)",
+  "2021 Ballona Creek Path (Lincoln Blvd / Marvin Braude)",
+  "2021 Compton Blvd (103rd St / 104th St)",
+  "2021 Los Angeles River Path (Los Feliz Blvd / Sunnynook Dr)",
+  "2021 Orange Line Bike Path (Baird Ave / Reseda Blvd)",
+  "2021 Red Car Bridge (- / -)",
+  "2021 San Fernando Bike Path (Tuxford St / Pendleton St)",
+  "2023 Arroyo Seco Bike Path (Via Marisol / Ave 60)",
+  "2023 Compton Blvd (103rd St / 104th St)",
+  "2023 Red Car Bridge (- / -)",
+  "2025 Arroyo Seco Bike Path (Via Marisol / Ave 60)",
+  "2025 Compton Blvd (103rd St / 104th St)",
+  "2025 Red Car Bridge (- / -)"
+ ],
+ "tiles": "data/layers/ladot_walkbike.pmtiles",
+ "files": {
+  "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_walkbike.geojson",
+  "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_walkbike.csv",
+  "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_walkbike.gpkg",
+  "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_walkbike.kmz",
+  "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_walkbike_shp.zip",
+  "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_walkbike_2229.dxf"
+ }
+}

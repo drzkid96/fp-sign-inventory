@@ -1,0 +1,73 @@
+{
+ "id": "smgov_meters",
+ "title": "Parking meters, Santa Monica",
+ "group": "parking",
+ "geom": "point",
+ "kind": "inventory",
+ "count": 5710,
+ "dropped": {
+  "before_limit": 0,
+  "undated": 0,
+  "no_location": 0,
+  "outside_county": 691
+ },
+ "built": "2026-11-28T12:27Z",
+ "source": {
+  "name": "Parking Meters Updates 2026",
+  "agency": "City of Santa Monica",
+  "url": "https://gis.santamonica.gov/server/rest/services/Parking_Meters_Updates_2026/MapServer/1",
+  "license": "Santa Monica open data"
+ },
+ "source_fields": [
+  "objectid",
+  "zone",
+  "area_pm",
+  "sub_area",
+  "pole",
+  "latitude",
+  "longitude",
+  "pole_type",
+  "pole_status",
+  "meter_type",
+  "terminal",
+  "location",
+  "config_id",
+  "name",
+  "carrier",
+  "shape",
+  "rfid",
+  "rfid_match",
+  "reported_f_w_version",
+  "set_f_w_version",
+  "set_f_w_version_d",
+  "reported_f_w_version_d",
+  "set_io_f_w_version",
+  "reported_io_f_w_version",
+  "collection_route",
+  "collection_sub_route",
+  "street_side",
+  "street_direction",
+  "street_address",
+  "dome_colour",
+  "block_number",
+  "enforcement_route",
+  "maintenance_route",
+  "original_meter__install_date",
+  "terminal_install_date",
+  "warranty_expiry"
+ ],
+ "seconds": 7,
+ "as_of": "2026",
+ "years": {
+  "2026": 5710
+ },
+ "tiles": "data/layers/smgov_meters.pmtiles",
+ "files": {
+  "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_meters.geojson",
+  "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_meters.csv",
+  "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_meters.gpkg",
+  "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_meters.kmz",
+  "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_meters_shp.zip",
+  "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_meters_2229.dxf"
+ }
+}

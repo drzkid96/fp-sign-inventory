@@ -1,0 +1,56 @@
+{
+ "id": "pasadena_meters",
+ "title": "Parking meters, Pasadena",
+ "group": "parking",
+ "geom": "point",
+ "kind": "inventory",
+ "count": 897,
+ "dropped": {
+  "before_limit": 0,
+  "undated": 0,
+  "no_location": 0,
+  "outside_county": 0
+ },
+ "built": "2026-11-28T12:27Z",
+ "source": {
+  "name": "Parking Meters",
+  "agency": "City of Pasadena",
+  "url": "https://services2.arcgis.com/zNjnZafDYCAJAbN0/arcgis/rest/services/Parking_Meters/FeatureServer/0",
+  "license": "Pasadena open data"
+ },
+ "source_fields": [
+  "OBJECTID",
+  "METER_NUMBER",
+  "DISTRICT",
+  "DAYS_OF_OPERATION",
+  "HOURLY_RATE",
+  "MAX_TIME",
+  "HOURS_OF_OPERATION",
+  "TYPE_OF_METER",
+  "SPACES_BY_SHARED_METERS",
+  "NO_OF_SPACES_CONTROLLED",
+  "METERS_SHARING_SPACES",
+  "TOTAL_SPACES",
+  "SPACE_NUMBERS",
+  "Passport_Zone",
+  "Meter_Status",
+  "created_user",
+  "created_date",
+  "last_edited_user",
+  "last_edited_date"
+ ],
+ "seconds": 1,
+ "as_of": "2023-03-22",
+ "years": {
+  "2023": 897
+ },
+ "tiles": "data/layers/pasadena_meters.pmtiles",
+ "files": {
+  "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meters.geojson",
+  "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meters.csv",
+  "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meters.gpkg",
+  "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meters.kmz",
+  "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meters_shp.zip",
+  "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meters_2229.dxf"
+ }
+}

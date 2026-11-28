@@ -1,0 +1,492 @@
+{
+ "caltrans_aadt": {
+  "id": "caltrans_aadt",
+  "title": "State highway AADT (Caltrans)",
+  "group": "volumes",
+  "geom": "point",
+  "kind": "observed",
+  "count": 1571,
+  "dropped": {
+   "before_limit": 0,
+   "undated": 0,
+   "no_location": 0,
+   "outside_county": 0
+  },
+  "built": "2026-11-28T12:26Z",
+  "source": {
+   "name": "Caltrans Traffic Census, Traffic Volumes AADT",
+   "agency": "Caltrans",
+   "url": "https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/Traffic_AADT/FeatureServer/0",
+   "license": "Public, State of California"
+  },
+  "seconds": 1,
+  "years": {
+   "2023": 1571
+  },
+  "tiles": "data/layers/caltrans_aadt.pmtiles",
+  "files": {
+   "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/caltrans_aadt.geojson",
+   "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/caltrans_aadt.csv",
+   "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/caltrans_aadt.gpkg",
+   "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/caltrans_aadt.kmz",
+   "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/caltrans_aadt_shp.zip",
+   "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/caltrans_aadt_2229.dxf"
+  }
+ },
+ "lacounty_adt": {
+  "id": "lacounty_adt",
+  "title": "County traffic counts (LA County Public Works)",
+  "group": "volumes",
+  "geom": "point",
+  "kind": "observed",
+  "count": 0,
+  "dropped": {
+   "before_limit": 0,
+   "undated": 0,
+   "no_location": 4718,
+   "outside_county": 0
+  },
+  "built": "2026-11-28T12:26Z",
+  "source": {
+   "name": "LA County Traffic Count (PW Open Data)",
+   "agency": "LA County Public Works",
+   "url": "https://dpw.gis.lacounty.gov/dpw/rest/services/PW_Open_Data/MapServer/59",
+   "license": "LA County open data"
+  },
+  "seconds": 7,
+  "years": {},
+  "field_map": {
+   "adt": "TOTAL_VOLUME",
+   "date": "COUNT_DATE",
+   "street": "STREETS",
+   "location": null,
+   "am_peak": null,
+   "pm_peak": null
+  }
+ },
+ "glendale_adt": {
+  "id": "glendale_adt",
+  "title": "Glendale ADT, 2024 existing",
+  "group": "volumes",
+  "geom": "line",
+  "kind": "observed",
+  "count": 466,
+  "dropped": {
+   "before_limit": 0,
+   "undated": 0,
+   "no_location": 0,
+   "outside_county": 0
+  },
+  "built": "2026-11-28T12:26Z",
+  "source": {
+   "name": "Glendale ADT Segments (existing 2024 column only)",
+   "agency": "City of Glendale (consultant-published)",
+   "url": "https://services.arcgis.com/4qIOeADCgonipFEW/arcgis/rest/services/Glendale_ADT_Segments/FeatureServer/15",
+   "license": "Public ArcGIS layer"
+  },
+  "seconds": 1,
+  "years": {
+   "2024": 466
+  },
+  "tiles": "data/layers/glendale_adt.pmtiles",
+  "files": {
+   "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/glendale_adt.geojson",
+   "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/glendale_adt.csv",
+   "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/glendale_adt.gpkg",
+   "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/glendale_adt.kmz",
+   "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/glendale_adt_shp.zip",
+   "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/glendale_adt_2229.dxf"
+  }
+ },
+ "speed_surveys": {
+  "id": "speed_surveys",
+  "title": "85th percentile speeds (E&TS reports)",
+  "group": "speeds",
+  "geom": "line",
+  "kind": "observed",
+  "count": 0,
+  "dropped": {
+   "before_limit": 0,
+   "undated": 0,
+   "no_location": 0,
+   "outside_county": 0
+  },
+  "built": "2026-11-28T12:26Z",
+  "source": {
+   "name": "City Engineering and Traffic Survey reports",
+   "agency": "Each city (listed per record)",
+   "url": "data/sources/speed_surveys.json",
+   "license": "Public records"
+  },
+  "seconds": 6,
+  "years": {},
+  "reports": [
+   {
+    "city": "West Hollywood",
+    "year": 2023,
+    "title": "2023 Traffic Speed Zone Survey",
+    "url": "https://weho.org/home/showpublisheddocument/58052/638360696003470000",
+    "error": "download refused (403); put the PDF in inputs/speed-surveys/"
+   },
+   {
+    "city": "Manhattan Beach",
+    "year": 2022,
+    "title": "2022 Engineering and Traffic Survey, summary table",
+    "url": "https://www.manhattanbeach.gov/home/showpublisheddocument/53536/638369612250170000",
+    "error": "download refused (403); put the PDF in inputs/speed-surveys/"
+   },
+   {
+    "city": "Manhattan Beach",
+    "year": 2022,
+    "title": "2022 Engineering and Traffic Survey, segment sheets",
+    "url": "https://www.manhattanbeach.gov/home/showpublisheddocument/53796/638410776415730000",
+    "error": "download refused (403); put the PDF in inputs/speed-surveys/"
+   },
+   {
+    "city": "El Monte",
+    "year": 2022,
+    "title": "2022 Engineering and Traffic Survey",
+    "url": "https://ca-elmonte.civicplus.com/DocumentCenter/View/6322/El-Monte_ETS-Rpt_Final-",
+    "error": "HTTPSConnectionPool(host='ca-elmonte.civicplus.com', port=443): Max retries exceeded with url: /DocumentCenter/View/6322/El-Monte_ETS-Rpt_Final- (Caused by NameResolutionError(\"HTTPSConnection(host='c"
+   },
+   {
+    "city": "South Pasadena",
+    "year": 2025,
+    "title": "2025 Citywide E&TS (Feb 2026 commission packet)",
+    "url": "https://www.southpasadenaca.gov/files/assets/public/v/1/boards-and-commissions/documents/public-works-infrastructure-commission/00-20260211-pwic-agenda-packet.pdf",
+    "error": "download refused (403); put the PDF in inputs/speed-surveys/"
+   }
+  ]
+ },
+ "ladot_walkbike": {
+  "id": "ladot_walkbike",
+  "title": "LADOT Walk & Bike Count",
+  "group": "active",
+  "geom": "point",
+  "kind": "observed",
+  "count": 248,
+  "dropped": {
+   "before_limit": 0,
+   "undated": 0,
+   "no_location": 0,
+   "outside_county": 0
+  },
+  "built": "2026-11-28T12:27Z",
+  "source": {
+   "name": "LADOT Walk & Bike Count 2021, 2023, 2025",
+   "agency": "LADOT",
+   "url": "https://data.lacity.org/d/hiwe-xzrt",
+   "license": "Los Angeles Open Data"
+  },
+  "seconds": 10,
+  "years": {
+   "2021": 93,
+   "2023": 76,
+   "2025": 79
+  },
+  "not_located": [
+   "2021 Arroyo Seco Bike Path (Via Marisol / Ave 60)",
+   "2021 Ballona Creek Path (Lincoln Blvd / Marvin Braude)",
+   "2021 Compton Blvd (103rd St / 104th St)",
+   "2021 Los Angeles River Path (Los Feliz Blvd / Sunnynook Dr)",
+   "2021 Orange Line Bike Path (Baird Ave / Reseda Blvd)",
+   "2021 Red Car Bridge (- / -)",
+   "2021 San Fernando Bike Path (Tuxford St / Pendleton St)",
+   "2023 Arroyo Seco Bike Path (Via Marisol / Ave 60)",
+   "2023 Compton Blvd (103rd St / 104th St)",
+   "2023 Red Car Bridge (- / -)",
+   "2025 Arroyo Seco Bike Path (Via Marisol / Ave 60)",
+   "2025 Compton Blvd (103rd St / 104th St)",
+   "2025 Red Car Bridge (- / -)"
+  ],
+  "tiles": "data/layers/ladot_walkbike.pmtiles",
+  "files": {
+   "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_walkbike.geojson",
+   "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_walkbike.csv",
+   "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_walkbike.gpkg",
+   "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_walkbike.kmz",
+   "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_walkbike_shp.zip",
+   "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_walkbike_2229.dxf"
+  }
+ },
+ "ladot_meters": {
+  "id": "ladot_meters",
+  "title": "Metered spaces, City of LA",
+  "group": "parking",
+  "geom": "point",
+  "kind": "inventory",
+  "count": 35042,
+  "dropped": {
+   "before_limit": 0,
+   "undated": 0,
+   "no_location": 0,
+   "outside_county": 10
+  },
+  "built": "2026-11-28T12:27Z",
+  "source": {
+   "name": "LADOT Metered Parking Inventory & Policies",
+   "agency": "LADOT",
+   "url": "https://data.lacity.org/d/s49e-q6j2",
+   "license": "Los Angeles Open Data"
+  },
+  "seconds": 2,
+  "as_of": "2026-11-27",
+  "years": {
+   "2026": 35042
+  },
+  "tiles": "data/layers/ladot_meters.pmtiles",
+  "files": {
+   "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_meters.geojson",
+   "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_meters.csv",
+   "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_meters.gpkg",
+   "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_meters.kmz",
+   "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_meters_shp.zip",
+   "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_meters_2229.dxf"
+  }
+ },
+ "smgov_meters": {
+  "id": "smgov_meters",
+  "title": "Parking meters, Santa Monica",
+  "group": "parking",
+  "geom": "point",
+  "kind": "inventory",
+  "count": 5710,
+  "dropped": {
+   "before_limit": 0,
+   "undated": 0,
+   "no_location": 0,
+   "outside_county": 691
+  },
+  "built": "2026-11-28T12:27Z",
+  "source": {
+   "name": "Parking Meters Updates 2026",
+   "agency": "City of Santa Monica",
+   "url": "https://gis.santamonica.gov/server/rest/services/Parking_Meters_Updates_2026/MapServer/1",
+   "license": "Santa Monica open data"
+  },
+  "seconds": 7,
+  "as_of": "2026",
+  "years": {
+   "2026": 5710
+  },
+  "tiles": "data/layers/smgov_meters.pmtiles",
+  "files": {
+   "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_meters.geojson",
+   "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_meters.csv",
+   "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_meters.gpkg",
+   "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_meters.kmz",
+   "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_meters_shp.zip",
+   "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_meters_2229.dxf"
+  }
+ },
+ "pasadena_meters": {
+  "id": "pasadena_meters",
+  "title": "Parking meters, Pasadena",
+  "group": "parking",
+  "geom": "point",
+  "kind": "inventory",
+  "count": 897,
+  "dropped": {
+   "before_limit": 0,
+   "undated": 0,
+   "no_location": 0,
+   "outside_county": 0
+  },
+  "built": "2026-11-28T12:27Z",
+  "source": {
+   "name": "Parking Meters",
+   "agency": "City of Pasadena",
+   "url": "https://services2.arcgis.com/zNjnZafDYCAJAbN0/arcgis/rest/services/Parking_Meters/FeatureServer/0",
+   "license": "Pasadena open data"
+  },
+  "seconds": 1,
+  "as_of": "2023-03-22",
+  "years": {
+   "2023": 897
+  },
+  "tiles": "data/layers/pasadena_meters.pmtiles",
+  "files": {
+   "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meters.geojson",
+   "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meters.csv",
+   "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meters.gpkg",
+   "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meters.kmz",
+   "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meters_shp.zip",
+   "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meters_2229.dxf"
+  }
+ },
+ "pasadena_meter_districts": {
+  "id": "pasadena_meter_districts",
+  "title": "Meter districts, Pasadena",
+  "group": "parking",
+  "geom": "polygon",
+  "kind": "inventory",
+  "count": 6,
+  "dropped": {
+   "before_limit": 0,
+   "undated": 0,
+   "no_location": 0,
+   "outside_county": 0
+  },
+  "built": "2026-11-28T12:27Z",
+  "source": {
+   "name": "Parking Meter Districts",
+   "agency": "City of Pasadena",
+   "url": "https://services2.arcgis.com/zNjnZafDYCAJAbN0/arcgis/rest/services/Parking_Meter_Districts/FeatureServer/1",
+   "license": "Pasadena open data"
+  },
+  "seconds": 0,
+  "as_of": "2026-10-21",
+  "years": {
+   "2026": 6
+  },
+  "tiles": "data/layers/pasadena_meter_districts.pmtiles",
+  "files": {
+   "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meter_districts.geojson",
+   "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meter_districts.csv",
+   "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meter_districts.gpkg",
+   "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meter_districts.kmz",
+   "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meter_districts_shp.zip",
+   "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meter_districts_2229.dxf"
+  }
+ },
+ "smgov_preferential": {
+  "id": "smgov_preferential",
+  "title": "Preferential parking, Santa Monica",
+  "group": "parking",
+  "geom": "line",
+  "kind": "inventory",
+  "count": 1647,
+  "dropped": {
+   "before_limit": 0,
+   "undated": 0,
+   "no_location": 0,
+   "outside_county": 0
+  },
+  "built": "2026-11-28T12:27Z",
+  "source": {
+   "name": "Preferential Parking",
+   "agency": "City of Santa Monica",
+   "url": "https://gis.santamonica.gov/server/rest/services/Preferential_Parking/MapServer/0",
+   "license": "Santa Monica open data"
+  },
+  "seconds": 2,
+  "as_of": "2026-07-23",
+  "years": {
+   "2026": 1647
+  },
+  "tiles": "data/layers/smgov_preferential.pmtiles",
+  "files": {
+   "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_preferential.geojson",
+   "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_preferential.csv",
+   "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_preferential.gpkg",
+   "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_preferential.kmz",
+   "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_preferential_shp.zip",
+   "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_preferential_2229.dxf"
+  }
+ },
+ "sweeping_la": {
+  "id": "sweeping_la",
+  "title": "Posted street sweeping, City of LA",
+  "group": "parking",
+  "geom": "polygon",
+  "kind": "inventory",
+  "count": 871,
+  "dropped": {
+   "before_limit": 0,
+   "undated": 0,
+   "no_location": 0,
+   "outside_county": 0
+  },
+  "built": "2026-11-28T12:27Z",
+  "source": {
+   "name": "Posted Street Sweeping Routes",
+   "agency": "LA Sanitation",
+   "url": "https://services1.arcgis.com/PTh9WC0Sf2WS7AAq/arcgis/rest/services/Posted_Street_Sweeping_Routes_Update/FeatureServer/0",
+   "license": "Public ArcGIS layer"
+  },
+  "seconds": 8,
+  "as_of": "2026-10-19",
+  "years": {
+   "2026": 871
+  },
+  "tiles": "data/layers/sweeping_la.pmtiles",
+  "files": {
+   "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_la.geojson",
+   "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_la.csv",
+   "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_la.gpkg",
+   "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_la.kmz",
+   "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_la_shp.zip",
+   "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_la_2229.dxf"
+  }
+ },
+ "sweeping_county": {
+  "id": "sweeping_county",
+  "title": "Street sweeping, unincorporated county",
+  "group": "parking",
+  "geom": "line",
+  "kind": "inventory",
+  "count": 27871,
+  "dropped": {
+   "before_limit": 0,
+   "undated": 0,
+   "no_location": 3,
+   "outside_county": 0
+  },
+  "built": "2026-11-28T12:27Z",
+  "source": {
+   "name": "Road Maintenance Division Street Sweeping Routes",
+   "agency": "LA County Public Works",
+   "url": "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Los_Angeles_County_Public_Works_Road_Maintenance_Division_Street_Sweeping_Routes/FeatureServer/0",
+   "license": "LA County open data"
+  },
+  "seconds": 16,
+  "as_of": "2026-11-05",
+  "years": {
+   "2026": 27871
+  },
+  "tiles": "data/layers/sweeping_county.pmtiles",
+  "files": {
+   "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_county.geojson",
+   "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_county.csv",
+   "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_county.gpkg",
+   "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_county.kmz",
+   "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_county_shp.zip",
+   "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_county_2229.dxf"
+  }
+ },
+ "sweeping_longbeach": {
+  "id": "sweeping_longbeach",
+  "title": "Street sweeping, Long Beach",
+  "group": "parking",
+  "geom": "polygon",
+  "kind": "inventory",
+  "count": 336,
+  "dropped": {
+   "before_limit": 0,
+   "undated": 0,
+   "no_location": 0,
+   "outside_county": 0
+  },
+  "built": "2026-11-28T12:28Z",
+  "source": {
+   "name": "Street Sweeping",
+   "agency": "City of Long Beach",
+   "url": "https://services6.arcgis.com/yCArG7wGXGyWLqav/arcgis/rest/services/Street_Sweeping/FeatureServer/0",
+   "license": "Long Beach open data"
+  },
+  "seconds": 1,
+  "as_of": "2024-11-08",
+  "years": {
+   "2024": 336
+  },
+  "tiles": "data/layers/sweeping_longbeach.pmtiles",
+  "files": {
+   "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_longbeach.geojson",
+   "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_longbeach.csv",
+   "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_longbeach.gpkg",
+   "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_longbeach.kmz",
+   "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_longbeach_shp.zip",
+   "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_longbeach_2229.dxf"
+  }
+ }
+}

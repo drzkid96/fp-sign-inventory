@@ -1,0 +1,54 @@
+{
+ "id": "sweeping_county",
+ "title": "Street sweeping, unincorporated county",
+ "group": "parking",
+ "geom": "line",
+ "kind": "inventory",
+ "count": 27871,
+ "dropped": {
+  "before_limit": 0,
+  "undated": 0,
+  "no_location": 3,
+  "outside_county": 0
+ },
+ "built": "2026-11-28T12:27Z",
+ "source": {
+  "name": "Road Maintenance Division Street Sweeping Routes",
+  "agency": "LA County Public Works",
+  "url": "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Los_Angeles_County_Public_Works_Road_Maintenance_Division_Street_Sweeping_Routes/FeatureServer/0",
+  "license": "LA County open data"
+ },
+ "source_fields": [
+  "OBJECTID",
+  "MD",
+  "RD",
+  "SCHEDULE",
+  "TIME",
+  "GLOBALID",
+  "POSTED",
+  "STREET_TYPE",
+  "CONTRACTOR",
+  "LAST_SCHED_EDIT",
+  "CREATED_USER",
+  "CREATED_DATE",
+  "LAST_EDITED_USER",
+  "LAST_EDITED_DATE",
+  "Shape__Length",
+  "FREQUENCY",
+  "ROUTE_NUMBER"
+ ],
+ "seconds": 16,
+ "as_of": "2026-11-05",
+ "years": {
+  "2026": 27871
+ },
+ "tiles": "data/layers/sweeping_county.pmtiles",
+ "files": {
+  "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_county.geojson",
+  "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_county.csv",
+  "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_county.gpkg",
+  "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_county.kmz",
+  "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_county_shp.zip",
+  "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_county_2229.dxf"
+ }
+}

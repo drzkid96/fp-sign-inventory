@@ -1,0 +1,47 @@
+{
+ "id": "pasadena_meter_districts",
+ "title": "Meter districts, Pasadena",
+ "group": "parking",
+ "geom": "polygon",
+ "kind": "inventory",
+ "count": 6,
+ "dropped": {
+  "before_limit": 0,
+  "undated": 0,
+  "no_location": 0,
+  "outside_county": 0
+ },
+ "built": "2026-11-28T12:27Z",
+ "source": {
+  "name": "Parking Meter Districts",
+  "agency": "City of Pasadena",
+  "url": "https://services2.arcgis.com/zNjnZafDYCAJAbN0/arcgis/rest/services/Parking_Meter_Districts/FeatureServer/1",
+  "license": "Pasadena open data"
+ },
+ "source_fields": [
+  "OBJECTID",
+  "Parking_Meter_District",
+  "Hours_of_Operation",
+  "General_Boundaries",
+  "Rate",
+  "Time_Limits",
+  "Comment",
+  "Reminder",
+  "Shape__Area",
+  "Shape__Length"
+ ],
+ "seconds": 0,
+ "as_of": "2026-10-21",
+ "years": {
+  "2026": 6
+ },
+ "tiles": "data/layers/pasadena_meter_districts.pmtiles",
+ "files": {
+  "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meter_districts.geojson",
+  "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meter_districts.csv",
+  "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meter_districts.gpkg",
+  "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meter_districts.kmz",
+  "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meter_districts_shp.zip",
+  "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/pasadena_meter_districts_2229.dxf"
+ }
+}

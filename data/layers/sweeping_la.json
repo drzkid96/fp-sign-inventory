@@ -1,0 +1,58 @@
+{
+ "id": "sweeping_la",
+ "title": "Posted street sweeping, City of LA",
+ "group": "parking",
+ "geom": "polygon",
+ "kind": "inventory",
+ "count": 871,
+ "dropped": {
+  "before_limit": 0,
+  "undated": 0,
+  "no_location": 0,
+  "outside_county": 0
+ },
+ "built": "2026-11-28T12:27Z",
+ "source": {
+  "name": "Posted Street Sweeping Routes",
+  "agency": "LA Sanitation",
+  "url": "https://services1.arcgis.com/PTh9WC0Sf2WS7AAq/arcgis/rest/services/Posted_Street_Sweeping_Routes_Update/FeatureServer/0",
+  "license": "Public ArcGIS layer"
+ },
+ "source_fields": [
+  "OBJECTID",
+  "Route",
+  "Posted_Time",
+  "Boundaries",
+  "Posted_Day",
+  "Day_Number",
+  "Weeks",
+  "Weeks_Number",
+  "Odd_Even",
+  "Day_Short",
+  "Route_Type",
+  "Maint_District",
+  "MD_Name",
+  "Maint_Area",
+  "GlobalID",
+  "created_user",
+  "created_date",
+  "last_edited_user",
+  "last_edited_date",
+  "Shape__Area",
+  "Shape__Length"
+ ],
+ "seconds": 8,
+ "as_of": "2026-10-19",
+ "years": {
+  "2026": 871
+ },
+ "tiles": "data/layers/sweeping_la.pmtiles",
+ "files": {
+  "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_la.geojson",
+  "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_la.csv",
+  "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_la.gpkg",
+  "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_la.kmz",
+  "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_la_shp.zip",
+  "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_la_2229.dxf"
+ }
+}

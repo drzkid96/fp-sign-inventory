@@ -1,0 +1,50 @@
+{
+ "id": "ladot_meters",
+ "title": "Metered spaces, City of LA",
+ "group": "parking",
+ "geom": "point",
+ "kind": "inventory",
+ "count": 35042,
+ "dropped": {
+  "before_limit": 0,
+  "undated": 0,
+  "no_location": 0,
+  "outside_county": 10
+ },
+ "built": "2026-11-28T12:27Z",
+ "source": {
+  "name": "LADOT Metered Parking Inventory & Policies",
+  "agency": "LADOT",
+  "url": "https://data.lacity.org/d/s49e-q6j2",
+  "license": "Los Angeles Open Data"
+ },
+ "source_fields": [
+  "spaceid",
+  "blockface",
+  "metertype",
+  "ratetype",
+  "raterange",
+  "timelimit",
+  "latlng",
+  ":@computed_region_qz3q_ghft",
+  ":@computed_region_k96s_3jcv",
+  ":@computed_region_tatf_ua23",
+  ":@computed_region_ur2y_g4cx",
+  ":@computed_region_kqwf_mjcx",
+  ":@computed_region_2dna_qi2s"
+ ],
+ "seconds": 2,
+ "as_of": "2026-11-27",
+ "years": {
+  "2026": 35042
+ },
+ "tiles": "data/layers/ladot_meters.pmtiles",
+ "files": {
+  "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_meters.geojson",
+  "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_meters.csv",
+  "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_meters.gpkg",
+  "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_meters.kmz",
+  "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_meters_shp.zip",
+  "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/ladot_meters_2229.dxf"
+ }
+}

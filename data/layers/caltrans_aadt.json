@@ -1,0 +1,51 @@
+{
+ "id": "caltrans_aadt",
+ "title": "State highway AADT (Caltrans)",
+ "group": "volumes",
+ "geom": "point",
+ "kind": "observed",
+ "count": 1571,
+ "dropped": {
+  "before_limit": 0,
+  "undated": 0,
+  "no_location": 0,
+  "outside_county": 0
+ },
+ "built": "2026-11-28T12:26Z",
+ "source": {
+  "name": "Caltrans Traffic Census, Traffic Volumes AADT",
+  "agency": "Caltrans",
+  "url": "https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/Traffic_AADT/FeatureServer/0",
+  "license": "Public, State of California"
+ },
+ "source_fields": [
+  "OBJECTID",
+  "DISTRICT",
+  "RTE",
+  "RTE_SFX",
+  "CNTY",
+  "PM_PFX",
+  "PM",
+  "PM_SFX",
+  "DESCRIPTION",
+  "BACK_PEAK_HOUR",
+  "BACK_PEAK_MADT",
+  "BACK_AADT",
+  "AHEAD_PEAK_HOUR",
+  "AHEAD_PEAK_MADT",
+  "AHEAD_AADT"
+ ],
+ "seconds": 1,
+ "years": {
+  "2023": 1571
+ },
+ "tiles": "data/layers/caltrans_aadt.pmtiles",
+ "files": {
+  "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/caltrans_aadt.geojson",
+  "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/caltrans_aadt.csv",
+  "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/caltrans_aadt.gpkg",
+  "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/caltrans_aadt.kmz",
+  "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/caltrans_aadt_shp.zip",
+  "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/caltrans_aadt_2229.dxf"
+ }
+}

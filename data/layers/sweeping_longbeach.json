@@ -1,0 +1,42 @@
+{
+ "id": "sweeping_longbeach",
+ "title": "Street sweeping, Long Beach",
+ "group": "parking",
+ "geom": "polygon",
+ "kind": "inventory",
+ "count": 336,
+ "dropped": {
+  "before_limit": 0,
+  "undated": 0,
+  "no_location": 0,
+  "outside_county": 0
+ },
+ "built": "2026-11-28T12:28Z",
+ "source": {
+  "name": "Street Sweeping",
+  "agency": "City of Long Beach",
+  "url": "https://services6.arcgis.com/yCArG7wGXGyWLqav/arcgis/rest/services/Street_Sweeping/FeatureServer/0",
+  "license": "Long Beach open data"
+ },
+ "source_fields": [
+  "OBJECTID",
+  "HOUR",
+  "DAYS",
+  "Shape__Area",
+  "Shape__Length"
+ ],
+ "seconds": 1,
+ "as_of": "2024-11-08",
+ "years": {
+  "2024": 336
+ },
+ "tiles": "data/layers/sweeping_longbeach.pmtiles",
+ "files": {
+  "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_longbeach.geojson",
+  "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_longbeach.csv",
+  "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_longbeach.gpkg",
+  "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_longbeach.kmz",
+  "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_longbeach_shp.zip",
+  "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/sweeping_longbeach_2229.dxf"
+ }
+}

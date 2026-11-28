@@ -1,0 +1,53 @@
+{
+ "id": "glendale_adt",
+ "title": "Glendale ADT, 2024 existing",
+ "group": "volumes",
+ "geom": "line",
+ "kind": "observed",
+ "count": 466,
+ "dropped": {
+  "before_limit": 0,
+  "undated": 0,
+  "no_location": 0,
+  "outside_county": 0
+ },
+ "built": "2026-11-28T12:26Z",
+ "source": {
+  "name": "Glendale ADT Segments (existing 2024 column only)",
+  "agency": "City of Glendale (consultant-published)",
+  "url": "https://services.arcgis.com/4qIOeADCgonipFEW/arcgis/rest/services/Glendale_ADT_Segments/FeatureServer/15",
+  "license": "Public ArcGIS layer"
+ },
+ "source_fields": [
+  "OBJECTID",
+  "Segment_Nu",
+  "segorder",
+  "Corridor",
+  "From_",
+  "To_",
+  "Class",
+  "Existing2024",
+  "ExistingRounded1",
+  "ExistingRounded2",
+  "CTMS2034",
+  "CTMSrounded1",
+  "CTMSrounded2",
+  "GP2045",
+  "GProunded1",
+  "GProunded2",
+  "Shape__Length"
+ ],
+ "seconds": 1,
+ "years": {
+  "2024": 466
+ },
+ "tiles": "data/layers/glendale_adt.pmtiles",
+ "files": {
+  "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/glendale_adt.geojson",
+  "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/glendale_adt.csv",
+  "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/glendale_adt.gpkg",
+  "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/glendale_adt.kmz",
+  "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/glendale_adt_shp.zip",
+  "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/glendale_adt_2229.dxf"
+ }
+}

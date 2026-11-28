@@ -1,0 +1,56 @@
+{
+ "id": "smgov_preferential",
+ "title": "Preferential parking, Santa Monica",
+ "group": "parking",
+ "geom": "line",
+ "kind": "inventory",
+ "count": 1647,
+ "dropped": {
+  "before_limit": 0,
+  "undated": 0,
+  "no_location": 0,
+  "outside_county": 0
+ },
+ "built": "2026-11-28T12:27Z",
+ "source": {
+  "name": "Preferential Parking",
+  "agency": "City of Santa Monica",
+  "url": "https://gis.santamonica.gov/server/rest/services/Preferential_Parking/MapServer/0",
+  "license": "Santa Monica open data"
+ },
+ "source_fields": [
+  "objectid",
+  "fullname",
+  "st_from",
+  "st_to",
+  "status",
+  "zone",
+  "rule_",
+  "adpt_date",
+  "amd_date1",
+  "amd_date2",
+  "amd_date3",
+  "enf_date",
+  "notes",
+  "creationdate",
+  "creator",
+  "editdate",
+  "editor",
+  "shape",
+  "st_length(shape)"
+ ],
+ "seconds": 2,
+ "as_of": "2026-07-23",
+ "years": {
+  "2026": 1647
+ },
+ "tiles": "data/layers/smgov_preferential.pmtiles",
+ "files": {
+  "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_preferential.geojson",
+  "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_preferential.csv",
+  "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_preferential.gpkg",
+  "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_preferential.kmz",
+  "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_preferential_shp.zip",
+  "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/smgov_preferential_2229.dxf"
+ }
+}

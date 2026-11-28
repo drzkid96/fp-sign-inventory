@@ -1,0 +1,38 @@
+{
+ "id": "lacounty_adt",
+ "title": "County traffic counts (LA County Public Works)",
+ "group": "volumes",
+ "geom": "point",
+ "kind": "observed",
+ "count": 0,
+ "dropped": {
+  "before_limit": 0,
+  "undated": 0,
+  "no_location": 4718,
+  "outside_county": 0
+ },
+ "built": "2026-11-28T12:26Z",
+ "source": {
+  "name": "LA County Traffic Count (PW Open Data)",
+  "agency": "LA County Public Works",
+  "url": "https://dpw.gis.lacounty.gov/dpw/rest/services/PW_Open_Data/MapServer/59",
+  "license": "LA County open data"
+ },
+ "source_fields": [
+  "STREETS",
+  "COUNT_DATE",
+  "DAY_OF_WEEK",
+  "TOTAL_VOLUME",
+  "ESRI_OID"
+ ],
+ "seconds": 7,
+ "years": {},
+ "field_map": {
+  "adt": "TOTAL_VOLUME",
+  "date": "COUNT_DATE",
+  "street": "STREETS",
+  "location": null,
+  "am_peak": null,
+  "pm_peak": null
+ }
+}
