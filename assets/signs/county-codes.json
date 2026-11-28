@@ -1,0 +1,10 @@
+{
+ "_source": "LA County Public Works sign records use Caltrans object marker types as codes: T + type letter (N, K, Q, P, R, L) + county variant number. Read from the codes (TP1R/TP1L are right/left Type P), the CA MUTCD 2026 (Sections 2C.70 and 3G.03, Figure 2C-17(CA)) and street photos at the recorded locations. The meaning of the variant number is not published.",
+ "tn": {"face": "om1-1", "code": "Type N(CA)", "name": "Object marker, Type N (CA)", "slug": "om1-1", "note": "Yellow diamond object marker in street photos at these records; face shown is the closest standard (OM1)."},
+ "tk": {"face": "draw:k", "code": "Type K(CA)", "name": "Object marker, Type K (CA), 18 inch flexible marker", "note": "Used with delineators at islands, ramps and connectors (CA MUTCD Figure 3G-102(CA))."},
+ "tq": {"face": "draw:q", "code": "Type Q(CA)", "name": "Tubular object marker, Type Q (CA)", "note": "Vertical tube 18 to 24 inches tall with yellow retroreflective bands; marks curb noses and objects in the roadway (CA MUTCD 2C.70, Figure 2C-17(CA))."},
+ "tpr": {"face": "om3-r", "code": "Type P(CA) right", "name": "Object marker, Type P (CA), right (OM3-R)", "slug": "om3-r", "note": "Narrow bridge approaches (CA MUTCD Figure 3G-104(CA))."},
+ "tpl": {"face": "om3-l", "code": "Type P(CA) left", "name": "Object marker, Type P (CA), left (OM3-L)", "slug": "om3-l", "note": "Narrow bridge approaches (CA MUTCD Figure 3G-104(CA))."},
+ "tr": {"face": "om3-c", "code": "Type R(CA)", "name": "Object marker, Type R (CA) (OM3-C)", "slug": "om3-c", "note": "Ramp gores (CA MUTCD Figure 3G-102(CA))."},
+ "tl": {"face": "draw:l", "code": "Type L(CA)", "name": "Utility pole marker, Type L (CA)", "note": "Three 2 x 12 inch yellow bands on a utility pole (CA MUTCD 2C.70, Figure 2C-17(CA))."}
+}

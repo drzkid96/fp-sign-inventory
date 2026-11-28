@@ -48,6 +48,7 @@ h2{font-size:10.5px;font-weight:700;letter-spacing:1px;color:var(--emerald);marg
 .sc-art b{font-size:14px}
 .sc-code{font-size:22px;font-weight:700;line-height:1.1}
 .sc-name{font-size:13px;color:var(--mute);margin-top:3px}
+.note-x{font-size:11.5px;color:var(--mute);margin:10px 0 0;line-height:1.4}
 .badges{display:flex;flex-wrap:wrap;gap:5px;margin:12px 0 0}
 .badge{font-size:10.5px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:4px;color:#fff;background:var(--c)}
 .badge.lt{color:var(--slate);background:var(--pale)}

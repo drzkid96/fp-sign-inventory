@@ -28,6 +28,17 @@ let IDX = {}, CMAP = {}, TRUST = {}, CITIES = [], FP = [], RAW = new Map();
 const on = k => document.querySelector(`.chips [data-layer="${k}"]`)?.classList.contains('on');
 const vis = (ids, v) => ids.forEach(id => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', v ? 'visible' : 'none'));
 
+/* county object marker codes (TN1, TK1, TQ1, TP1R ...) read as Caltrans object marker types */
+let CC = {};
+function county(k) {
+  const m = String(k || '').match(/^t([nkqrl])-?\d*$/) || String(k || '').match(/^t(p)\d*([rl])$/);
+  if (!m) return null; return CC[m[2] ? 'tp' + m[2] : 't' + m[1]] || null;
+}
+function drawSVG(kind) {
+  if (kind === 'q') return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 60"><rect x="6" y="4" width="12" height="54" rx="6" fill="#fff" stroke="#00242E" stroke-width="2"/><rect x="6" y="9" width="12" height="5" fill="#FDBE0F"/><rect x="6" y="17" width="12" height="5" fill="#FDBE0F"/><rect x="6" y="25" width="12" height="5" fill="#FDBE0F"/></svg>`;
+  if (kind === 'k') return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 60"><rect x="8" y="4" width="8" height="54" rx="2" fill="#fff" stroke="#00242E" stroke-width="2"/><rect x="6" y="6" width="12" height="16" rx="1" fill="#FDBE0F" stroke="#00242E" stroke-width="1.5"/></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 60"><rect x="6" y="2" width="16" height="56" rx="3" fill="#8a7a66"/><rect x="4" y="14" width="20" height="4" fill="#FDBE0F" stroke="#00242E"/><rect x="4" y="22" width="20" height="4" fill="#FDBE0F" stroke="#00242E"/><rect x="4" y="30" width="20" height="4" fill="#FDBE0F" stroke="#00242E"/></svg>`;
+}
 /* sign faces */
 const resolve = k => IDX[k]?.icon ? k : IDX[k + 'ca']?.icon ? k + 'ca' : null;
 const NUMERIC = ['r2-1', 'w13-1p'];
@@ -55,7 +66,9 @@ async function face(k) {
   if (!k || map.hasImage('sg:' + k) || loading.has(k)) return; loading.add(k);
   try {
     if (k.includes('@')) { const [c, v] = k.split('@'); map.addImage('sg:' + k, await svgImage(speedSVG(c, v), 128), {pixelRatio: 2}); return; }
-    const r = resolve(k); if (!r) throw 0;
+    const cc = county(k);
+    if (cc?.face.startsWith('draw:')) { map.addImage('sg:' + k, await svgImage(drawSVG(cc.face.slice(5)), 128), {pixelRatio: 2}); return; }
+    const r = cc ? cc.face : resolve(k); if (!r) throw 0;
     const img = await map.loadImage(`assets/signs/${r}.png`); if (!map.hasImage('sg:' + k)) map.addImage('sg:' + k, img.data, {pixelRatio: 2});
   } catch (e) { if (!map.hasImage('sg:' + k)) map.addImage('sg:' + k, tag((IDX[k]?.code || k.split('@')[0]).toUpperCase()), {pixelRatio: 2}); }
 }
@@ -64,9 +77,9 @@ const trustOf = code => (TRUST[String(code || '').split('/')[0].split('(')[0].tr
 
 map.on('load', async () => {
   const get = (u, d) => fetch(u + V).then(r => r.ok ? r.json() : d).catch(() => d);
-  const [tiles, idx, cmap, trust, agency, fp] = await Promise.all([get('data/base/tiles.geojson', {features: []}), get('assets/signs/index.json', {}),
-    get('data/classmap.json', {}), get('data/base/trust.json', {codes: {}}), get('data/base/agency.json', null), get('data/base/fp.geojson', {features: []})]);
-  IDX = idx; CMAP = cmap; TRUST = trust.codes || {};
+  const [tiles, idx, cmap, trust, agency, fp, cc] = await Promise.all([get('data/base/tiles.geojson', {features: []}), get('assets/signs/index.json', {}),
+    get('data/classmap.json', {}), get('data/base/trust.json', {codes: {}}), get('data/base/agency.json', null), get('data/base/fp.geojson', {features: []}), get('assets/signs/county-codes.json', {})]);
+  IDX = idx; CMAP = cmap; TRUST = trust.codes || {}; CC = cc;
   FP = fp.features.filter(f => !f.properties.name);
 
   // aerial sits under the street names
@@ -227,8 +240,9 @@ function srcRow(r) {
 function openCard(g) {
   if (!g) return; const top = g.recs[0], [lon, lat] = top.ll;
   const best = g.recs.find(r => r.face.includes('@') && !r.face.endsWith('@?')) || top;
-  const {code, val} = codeOf(best), k = famKey(code), info = IDX[resolve(k) || k] || IDX[k] || {};
-  const art = NUMERIC.includes(k) ? `<img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(speedSVG(k, val || '?'))}" alt="">`
+  const {code, val} = codeOf(best), k = famKey(code), cc = county(k);
+  const info = cc ? {name: `${cc.name} · county code ${code}`, slug: cc.slug, svg: cc.slug && IDX[cc.slug]?.svg, note: cc.note, draw: cc.face.startsWith('draw:') && cc.face.slice(5)} : (IDX[resolve(k) || k] || IDX[k] || {});
+  const art = info.draw ? `<img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(drawSVG(info.draw))}" alt="">` : NUMERIC.includes(k) ? `<img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(speedSVG(k, val || '?'))}" alt="">`
     : info.svg ? `<img src="${SSS}${info.svg}" alt="">` : `<b>${esc(code)}</b>`;
   const srcs = [...new Set(g.recs.map(r => r.src))];
   const agree = srcs.length > 1 ? `<span class="badge lt">${srcs.length} SOURCES AGREE</span>` : '';
@@ -236,7 +250,7 @@ function openCard(g) {
   const photo = fpRec ? `<div class="photo"><img src="${esc(fpRec.p.crop)}" alt="Sign photo"><div class="cap">Photo ${esc(fpRec.p.seen)} · read by our sign model</div></div>`
     : `<div class="photo" id="ph"><div class="msg">Loading photo…</div></div>`;
   $('#card-body').innerHTML = `<div class="sc-head"><div class="sc-art">${art}</div><div><div class="sc-code">${esc(code || 'No code')}${val ? ` <span style="font-weight:500">(${esc(val)})</span>` : ''}</div>
-    <div class="sc-name">${esc(info.name || (top.src === 'county' ? top.p.desc : '') || '')}</div></div></div>
+    <div class="sc-name">${esc(info.name || (top.src === 'county' ? top.p.desc : '') || '')}</div></div></div>${info.note ? `<p class="note-x">${esc(info.note)}</p>` : ''}
     <div class="badges">${srcs.map(s => `<span class="badge" style="--c:${SRC[s].c}">${SRC[s].t.toUpperCase()}</span>`).join('')}${agree}</div>${photo}
     <table class="facts">${g.recs.map(r => { const [a, b] = srcRow(r); return `<tr><td><b style="color:${SRC[r.src].c}">${SRC[r.src].t}</b><br>${a}</td><td>${b}</td></tr>`; }).join('')}</table>
     <div class="links">${info.slug ? `<a href="${SSS}/signs/${info.slug}/" target="_blank" rel="noopener">Standard</a>` : ''}<a href="${sv(lat, lon)}" target="_blank" rel="noopener">Street View</a><a href="${mlyAt(lat, lon)}" target="_blank" rel="noopener">Mapillary</a></div>`;
