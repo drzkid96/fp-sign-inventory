@@ -1,0 +1,22 @@
+{
+ "county_signs": {
+  "count": 159832,
+  "source": "https://dpw.gis.lacounty.gov/dpw/rest/services/cityworks/cityworks_osd/MapServer/0",
+  "downloaded": "2026-11-28"
+ },
+ "county_striping": {
+  "count": 0,
+  "source": "https://dpw.gis.lacounty.gov/dpw/rest/services/cityworks/cityworks_osd/MapServer/14",
+  "downloaded": "2026-11-28"
+ },
+ "county_markings": {
+  "count": 0,
+  "source": "https://dpw.gis.lacounty.gov/dpw/rest/services/cityworks/cityworks_osd/MapServer/15",
+  "downloaded": "2026-11-28"
+ },
+ "county_signals": {
+  "count": 2259,
+  "source": "https://dpw.gis.lacounty.gov/dpw/rest/services/PW_Jurisdiction_Locator/MapServer/16",
+  "downloaded": "2026-11-28"
+ }
+}
