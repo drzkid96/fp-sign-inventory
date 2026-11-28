@@ -19,8 +19,9 @@ def norm(name):
     s = re.sub(r'\(.*?\)', ' ', str(name or '').lower()); s = re.sub(r'[.,#]', ' ', s); s = re.sub(r'\s+', ' ', s).strip()
     s = ALIAS.get(s, s)
     w = [ORD.get(x, x) for x in s.split()]
-    if len(w) == 2 and w[0] in ('avenue', 'av', 'ave') and w[1].isdigit(): w[0] = 'ave'
     while len(w) > 1 and w[0] in DIRS: w = w[1:]
+    if len(w) >= 2 and w[0] in ('avenue', 'av', 'ave'):          # numbered and lettered avenues: Avenue 50, Ave M-12, Avenue E
+        return ' '.join(['ave'] + [x.replace(' ', '-') for x in w[1:]]).replace('ave e ', 'ave e-') if len(w) > 2 and w[2].isdigit() else ' '.join(['ave'] + w[1:])
     while len(w) > 1 and w[-1] in DIRS: w = w[:-1]
     if len(w) > 1 and w[-1] in SUF: w[-1] = SUF[w[-1]]
     return ' '.join(w)

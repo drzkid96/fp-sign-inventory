@@ -161,8 +161,11 @@ def exports(lid, fc, fc_path, all_layers=True):
     os.remove(kml); files['KMZ'] = lid + '.kmz'
     d = os.path.join('/tmp', 'shp_' + lid); shutil.rmtree(d, ignore_errors=True); os.makedirs(d)
     import warnings
+    fam = g.geom_type.str.replace('Multi', '')
     with warnings.catch_warnings():
-        warnings.simplefilter('ignore'); g.to_file(os.path.join(d, lid + '.shp'))
+        warnings.simplefilter('ignore')
+        for t, part in g.groupby(fam):                 # a shapefile holds one geometry type
+            part.to_file(os.path.join(d, lid + ('' if fam.nunique() == 1 else '_' + t.lower()) + '.shp'))
     with zipfile.ZipFile(os.path.join(OUT, lid + '_shp.zip'), 'w', zipfile.ZIP_DEFLATED) as z:
         for fn in os.listdir(d): z.write(os.path.join(d, fn), fn)
     files['Shapefile'] = lid + '_shp.zip'
