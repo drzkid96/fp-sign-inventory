@@ -18,7 +18,7 @@ const map = new maplibregl.Map({
   container: 'map', center: [-118.25, 34.05], zoom: 9.2, minZoom: 8, maxZoom: 20, hash: true, attributionControl: {compact: true},
   style: {version: 8, glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf', sources: {
     light: {type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 19, attribution: '© OpenStreetMap contributors'},
-    aerial: {type: 'raster', tiles: ['https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 16, attribution: 'Imagery: USGS The National Map'},
+    aerial: {type: 'raster', tiles: ['https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 16, attribution: 'Imagery: USGS The National Map'},
     hires: {type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 20, attribution: 'Imagery © Esri'}},
     layers: [{id: 'light', type: 'raster', source: 'light', paint: {'raster-saturation': -0.85, 'raster-brightness-min': 0.12, 'raster-contrast': -0.1}},
              {id: 'aerial', type: 'raster', source: 'aerial', maxzoom: 16, layout: {visibility: 'none'}},
