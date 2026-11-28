@@ -116,10 +116,10 @@ function hud() {
 const pop = (e, html) => new maplibregl.Popup({maxWidth: '300px'}).setLngLat(e.lngLat).setHTML(`<div class="pop">${html}</div>`).addTo(map);
 const rows = o => '<table>' + Object.entries(o).filter(([, v]) => v !== '' && v != null).map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('') + '</table>';
 const links = (lat, lon, h) => `<a href="${sv(lat, lon, h)}" target="_blank" rel="noopener">Street View</a> · <a href="${mlyLink(lat, lon)}" target="_blank" rel="noopener">Mapillary</a>`;
-const top = e => { const L = ['fp', 'mly', 'ag-signals', 'ag-signs', 'ag-markings', 'ag-striping', 'ph-img', 'tiles-fill'].filter(id => map.getLayer(id) && map.getLayoutProperty(id, 'visibility') !== 'none');
+const hitAt = e => { const L = ['fp', 'mly', 'ag-signals', 'ag-signs', 'ag-markings', 'ag-striping', 'ph-img', 'tiles-fill'].filter(id => map.getLayer(id) && map.getLayoutProperty(id, 'visibility') !== 'none');
   return map.queryRenderedFeatures([[e.point.x - 5, e.point.y - 5], [e.point.x + 5, e.point.y + 5]], {layers: L})[0]; };
 map.on('click', e => {
-  const f = top(e); if (!f) return; const p = f.properties, [lon, lat] = f.geometry.type === 'Point' ? f.geometry.coordinates : [e.lngLat.lng, e.lngLat.lat];
+  const f = hitAt(e); if (!f) return; const p = f.properties, [lon, lat] = f.geometry.type === 'Point' ? f.geometry.coordinates : [e.lngLat.lng, e.lngLat.lat];
   const id = f.layer.id;
   if (id === 'fp') pop(e, `<h3>${esc(p.code)}</h3><span class="tag${p.status === 'review' ? ' rv' : ''}">${p.status === 'review' ? 'CHECK IN FIELD' : p.name ? 'STREET NAME' : 'HIGH CONFIDENCE'}</span>${p.crop ? `<img src="${p.crop}" alt="">` : ''}` +
     rows({Location: esc(p.loc), Photo: esc(p.seen), Confidence: p.conf ? Math.round(p.conf * 100) + '%' : '', Area: esc(p.area), Source: 'FP street-level inventory'}) + links(lat, lon, p.dir));
