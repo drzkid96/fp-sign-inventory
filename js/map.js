@@ -45,9 +45,24 @@ function tag(text) {
   x.fillStyle = '#00242E'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, w / 2, h / 2 + s);
   return {width: w, height: h, data: new Uint8Array(x.getImageData(0, 0, w, h).data.buffer)};
 }
+/* faces that carry a number are drawn with the actual value: R2-1 speed limit, W13-1P advisory speed */
+function speedSVG(code, v) {
+  if (code === 'w13-1p') return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect x="2" y="2" width="56" height="56" rx="5" fill="#FDBE0F" stroke="#000" stroke-width="3"/><text x="30" y="34" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="26" text-anchor="middle">${v}</text><text x="30" y="51" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="12" text-anchor="middle">MPH</text></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 60"><rect x="1.5" y="1.5" width="45" height="57" rx="3" fill="#fff" stroke="#000" stroke-width="2"/><rect x="4" y="4" width="40" height="52" rx="2" fill="none" stroke="#000" stroke-width="1.5"/><text x="24" y="17" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="9" text-anchor="middle">SPEED</text><text x="24" y="27" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="9" text-anchor="middle">LIMIT</text><text x="24" y="51" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="24" text-anchor="middle">${v}</text></svg>`;
+}
+const NUMERIC = ['r2-1', 'w13-1p'];
+const faceKey = (k, v) => NUMERIC.includes(k) && /^\d+$/.test(String(v || '')) ? k + '@' + v : k;
+function svgImage(svg, h) {
+  return new Promise((ok, no) => { const im = new Image(); im.onload = () => { const r = im.width / im.height || 0.8, cv = document.createElement('canvas');
+    cv.height = h; cv.width = Math.round(h * r); const x = cv.getContext('2d'); x.drawImage(im, 0, 0, cv.width, cv.height);
+    ok({width: cv.width, height: cv.height, data: new Uint8Array(x.getImageData(0, 0, cv.width, cv.height).data.buffer)}); };
+    im.onerror = no; im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); });
+}
 async function loadIcons(keys) {
   await Promise.all([...new Set(keys)].filter(k => k && !map.hasImage('sg:' + k)).map(async k => {
-    const r = resolve(k);
+    if (k.includes('@')) { const [c, v] = k.split('@');
+      try { const im = await svgImage(speedSVG(c, v), 128); if (!map.hasImage('sg:' + k)) map.addImage('sg:' + k, im, {pixelRatio: 2}); return; } catch (e) {} }
+    const r = resolve(k.split('@')[0]);
     try {
       if (!r) throw 0;
       const img = await map.loadImage(`assets/signs/${r}.png`);
@@ -102,7 +117,7 @@ map.on('load', async () => {
   // instant (Mapillary detections, code translated, faded by trust)
   const iconOf = {}, trustOf = {likely: [], mixed: []};
   for (const [v, m] of Object.entries(CMAP)) {
-    const k = famKey(m.code); if (!k) continue; iconOf[v] = k;
+    const k = famKey(m.code); if (!k) continue; iconOf[v] = faceKey(k, m.val);
     const t = (TRUST[String(m.code).split('/')[0].split('(')[0].trim()] || {}).trust; if (trustOf[t]) trustOf[t].push(v);
   }
   const vals = Object.keys(iconOf);
@@ -114,7 +129,7 @@ map.on('load', async () => {
   // scanned (our model)
   const fp = await get('data/base/fp.geojson', {type: 'FeatureCollection', features: []});
   fp.features = fp.features.filter(f => !f.properties.name);
-  fp.features.forEach(f => f.properties.key = f.properties.key || famKey(f.properties.code));
+  fp.features.forEach(f => { const p = f.properties, k = famKey(p.code), v = p.val || (String(p.code).match(/\((\d+)\)$/) || [])[1]; p.key = faceKey(k, v); });
   map.addSource('fp', {type: 'geojson', data: fp});
   signLayers('fp', 'fp', {}, ['concat', 'sg:', ['get', 'key']]);
 
@@ -154,6 +169,9 @@ function hint() {
 }
 
 /* panel: fold and search */
+const narrow = () => innerWidth < 700;
+const fold = on => { $('#panel').classList.toggle('folded', on); $('#fold').textContent = on ? '+' : '–'; };
+if (narrow()) fold(true);
 $('#fold').onclick = () => { $('#panel').classList.toggle('folded'); $('#fold').textContent = $('#panel').classList.contains('folded') ? '+' : '–'; };
 let qT;
 $('#q').oninput = () => { clearTimeout(qT); qT = setTimeout(search, 300); };
@@ -208,12 +226,13 @@ function openCard(src, f) {
     photo = `<div class="photo" id="ph"><div class="msg">Looking for the nearest street photo…</div></div>`;
   }
   const k = famKey(code), info = IDX[resolve(k) || k] || IDX[k] || {};
-  const art = info.svg ? `<img src="${SSS}${info.svg}" alt="${esc(code)}">` : `<b>${esc(code)}</b>`;
+  const art = NUMERIC.includes(k) && /^\d+$/.test(String(val)) ? `<img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(speedSVG(k, val))}" alt="${esc(code)} ${esc(val)}">`
+    : info.svg ? `<img src="${SSS}${info.svg}" alt="${esc(code)}">` : `<b>${esc(code)}</b>`;
   $('#card-body').innerHTML = `<div class="sc-head"><div class="sc-art">${art}</div><div><div class="sc-code">${esc(code || 'No code')}${val ? ` <span style="font-weight:500">(${esc(val)})</span>` : ''}</div>
     <div class="sc-name">${esc(info.name || '')}</div></div></div><div class="badges">${badges.join('')}</div>${photo}
     <table class="facts">${Object.entries(facts).filter(([, v]) => v).map(([k_, v]) => `<tr><td>${k_}</td><td>${esc(v)}</td></tr>`).join('')}</table>
     <div class="links">${info.slug ? `<a href="${SSS}/signs/${info.slug}/" target="_blank" rel="noopener">Standard</a>` : ''}<a href="${sv(lat, lon)}" target="_blank" rel="noopener">Street View</a><a href="${mlyAt(lat, lon)}" target="_blank" rel="noopener">Mapillary</a></div>`;
-  $('#card').hidden = false;
+  $('#card').hidden = false; if (narrow()) fold(true);
   if (!map.getSource('sel')) { map.addSource('sel', {type: 'geojson', data: {type: 'FeatureCollection', features: []}});
     map.addLayer({id: 'sel', type: 'circle', source: 'sel', paint: {'circle-radius': 14, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-color': '#FF6622', 'circle-stroke-width': 3}}); }
   map.getSource('sel').setData({type: 'Feature', geometry: {type: 'Point', coordinates: [lon, lat]}, properties: {}});
