@@ -11,7 +11,7 @@
   "no_location": 0,
   "outside_county": 0
  },
- "built": "2026-11-28T12:27Z",
+ "built": "2026-11-28T12:34Z",
  "source": {
   "name": "Posted Street Sweeping Routes",
   "agency": "LA Sanitation",
@@ -41,7 +41,7 @@
   "Shape__Area",
   "Shape__Length"
  ],
- "seconds": 8,
+ "seconds": 6,
  "as_of": "2026-10-19",
  "years": {
   "2026": 871

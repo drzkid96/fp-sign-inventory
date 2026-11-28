@@ -11,7 +11,7 @@
   "no_location": 0,
   "outside_county": 0
  },
- "built": "2026-11-28T12:27Z",
+ "built": "2026-11-28T12:33Z",
  "source": {
   "name": "LADOT Walk & Bike Count 2021, 2023, 2025",
   "agency": "LADOT",
@@ -19,7 +19,7 @@
   "license": "Los Angeles Open Data"
  },
  "source_fields": null,
- "seconds": 10,
+ "seconds": 14,
  "years": {
   "2021": 93,
   "2023": 76,

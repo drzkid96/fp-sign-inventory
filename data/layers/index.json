@@ -12,14 +12,14 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:26Z",
+  "built": "2026-11-28T12:33Z",
   "source": {
    "name": "Caltrans Traffic Census, Traffic Volumes AADT",
    "agency": "Caltrans",
    "url": "https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/Traffic_AADT/FeatureServer/0",
    "license": "Public, State of California"
   },
-  "seconds": 1,
+  "seconds": 2,
   "years": {
    "2023": 1571
   },
@@ -39,29 +39,113 @@
   "group": "volumes",
   "geom": "point",
   "kind": "observed",
-  "count": 0,
+  "count": 6050,
   "dropped": {
    "before_limit": 0,
    "undated": 0,
-   "no_location": 4718,
+   "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:26Z",
+  "built": "2026-11-28T12:33Z",
   "source": {
    "name": "LA County Traffic Count (PW Open Data)",
    "agency": "LA County Public Works",
    "url": "https://dpw.gis.lacounty.gov/dpw/rest/services/PW_Open_Data/MapServer/59",
    "license": "LA County open data"
   },
-  "seconds": 7,
-  "years": {},
+  "seconds": 26,
+  "years": {
+   "2021": 120,
+   "2022": 1196,
+   "2023": 1566,
+   "2024": 1375,
+   "2025": 1139,
+   "2026": 654
+  },
   "field_map": {
    "adt": "TOTAL_VOLUME",
    "date": "COUNT_DATE",
-   "street": "STREETS",
-   "location": null,
-   "am_peak": null,
-   "pm_peak": null
+   "location": "STREETS",
+   "day": "DAY_OF_WEEK"
+  },
+  "samples": [
+   "ELIZABETH LAKE ROAD N/O DELTA WAY",
+   "ELIZABETH LAKE ROAD N/O DELTA WAY",
+   "LEXINGTON DRIVE E/O RAINBOW DRIVE",
+   "DEL MAR BOULEVARD E/O LOTUS AVENUE",
+   "DEL MAR BOULEVARD E/O LOTUS AVENUE",
+   "CITY TERRACE DRIVE W/O HERBERT AVENUE",
+   "KANAN DUME ROAD S/O LOFTY HEIGHTS DRIVE",
+   "CALOBAR AVENUE N/O WASHINGTON BOULEVARD",
+   "WORKMAN MILL ROAD N/O PECK ROAD",
+   "WORKMAN MILL ROAD N/O PECK ROAD",
+   "WORKMAN MILL ROAD N/O PECK ROAD",
+   "WORKMAN MILL ROAD N/O PECK ROAD",
+   "CALOBAR AVENUE N/O BLANDING STREET",
+   "KANAN ROAD W/O CASTLE VIEW DRIVE",
+   "VERMONT AVENUE S/O 245TH STREET",
+   "KANAN ROAD S/O CORNELL WAY",
+   "NORMANDIE AVENUE S/O SEPULVEDA BOULEVARD",
+   "VERMONT AVENUE S/O ASHBRIDGE LANE",
+   "NORMANDIE AVENUE N/O LOMITA BOULEVARD",
+   "NORMANDIE AVENUE S/O PASATIEMPO LANE",
+   "KANAN ROAD N/O MULHOLLAND HIGHWAY",
+   "DEL MAR BOULEVARD E/O LOTUS AVENUE",
+   "DEL MAR BOULEVARD E/O LOTUS AVENUE",
+   "WHITESIDE STREET W/O DUNN AVENUE",
+   "HICKS AVENUE S/O STORY STREET"
+  ],
+  "not_located": 667,
+  "not_located_examples": [
+   "KANAN ROAD S/O CORNELL WAY",
+   "ROOSEVELT AVENUE S/O OAKDALE STREET",
+   "ROOSEVELT AVENUE S/O OAKDALE STREET",
+   "AVENUE S-10 E/O 98TH STREET EAST",
+   "AVENUE T W/O 101ST STREET EAST",
+   "AVENUE E W/O 90TH STREET EAST",
+   "AVENUE E W/O 90TH STREET EAST",
+   "AVENUE E W/O 90TH STREET EAST",
+   "AVENUE E W/O 90TH STREET EAST",
+   "AVENUE E W/O 90TH STREET EAST",
+   "LOPEZ CANYON ROAD N/O BOY SCOUT MOTORWAY",
+   "AVENUE M-12 W/O 51ST STREET WEST",
+   "AVENUE M-12 E/O VENTANA DRIVE",
+   "AVENUE P W/O 50TH STREET EAST",
+   "AVENUE M-12 W/O VENTANA DRIVE",
+   "AVENUE M-4 E/O 50TH STREET WEST",
+   "SHINN ROAD E/O MOUNT BALDY ROAD",
+   "SHINN ROAD E/O MOUNT BALDY ROAD",
+   "SHINN ROAD E/O MOUNT BALDY ROAD",
+   "AVENUE M E/O 50TH STREET WEST",
+   "AVENUE M E/O 50TH STREET WEST",
+   "AVENUE M E/O 50TH STREET WEST",
+   "AVENUE M E/O 50TH STREET WEST",
+   "AVENUE M E/O 50TH STREET WEST",
+   "80TH STREET WEST N/O AVENUE E-12",
+   "EL SEGUNDO BOULEVARD E/O LAGUNA DOMINGUEZ TRAIL",
+   "80TH STREET WEST N/O AVENUE E-4",
+   "80TH STREET WEST N/O AVENUE E",
+   "80TH STREET WEST N/O AVENUE G",
+   "MULHOLLAND HIGHWAY W/O MM 14.51",
+   "MULHOLLAND HIGHWAY W/O MM 14.51",
+   "80TH STREET WEST S/O AVENUE D",
+   "80TH STREET WEST S/O AVENUE F",
+   "ROOSEVELT AVENUE S/O OAKDALE STREET",
+   "STUNT ROAD E/O MM 1.94",
+   "STUNT ROAD E/O MM 3.17",
+   "ROOSEVELT AVENUE S/O OAKDALE STREET",
+   "AVENUE L-6 W/O 42ND STREET WEST",
+   "KANAN DUME ROAD S/O DUME CANYON MOTORWAY",
+   "LONGVIEW ROAD S/O AVENUE W-4"
+  ],
+  "tiles": "data/layers/lacounty_adt.pmtiles",
+  "files": {
+   "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/lacounty_adt.geojson",
+   "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/lacounty_adt.csv",
+   "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/lacounty_adt.gpkg",
+   "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/lacounty_adt.kmz",
+   "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/lacounty_adt_shp.zip",
+   "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/lacounty_adt_2229.dxf"
   }
  },
  "glendale_adt": {
@@ -77,7 +161,7 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:26Z",
+  "built": "2026-11-28T12:33Z",
   "source": {
    "name": "Glendale ADT Segments (existing 2024 column only)",
    "agency": "City of Glendale (consultant-published)",
@@ -156,7 +240,9 @@
     "url": "https://www.southpasadenaca.gov/files/assets/public/v/1/boards-and-commissions/documents/public-works-infrastructure-commission/00-20260211-pwic-agenda-packet.pdf",
     "error": "download refused (403); put the PDF in inputs/speed-surveys/"
    }
-  ]
+  ],
+  "error": "FeatureError: Could not add feature to layer at index 4: Attempt to write non-linestring (POINT) geometry to ARC type shapefile.",
+  "failed": "2026-11-28T12:33Z"
  },
  "ladot_walkbike": {
   "id": "ladot_walkbike",
@@ -171,14 +257,14 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:27Z",
+  "built": "2026-11-28T12:33Z",
   "source": {
    "name": "LADOT Walk & Bike Count 2021, 2023, 2025",
    "agency": "LADOT",
    "url": "https://data.lacity.org/d/hiwe-xzrt",
    "license": "Los Angeles Open Data"
   },
-  "seconds": 10,
+  "seconds": 14,
   "years": {
    "2021": 93,
    "2023": 76,
@@ -222,14 +308,14 @@
    "no_location": 0,
    "outside_county": 10
   },
-  "built": "2026-11-28T12:27Z",
+  "built": "2026-11-28T12:33Z",
   "source": {
    "name": "LADOT Metered Parking Inventory & Policies",
    "agency": "LADOT",
    "url": "https://data.lacity.org/d/s49e-q6j2",
    "license": "Los Angeles Open Data"
   },
-  "seconds": 2,
+  "seconds": 7,
   "as_of": "2026-11-27",
   "years": {
    "2026": 35042
@@ -257,14 +343,14 @@
    "no_location": 0,
    "outside_county": 691
   },
-  "built": "2026-11-28T12:27Z",
+  "built": "2026-11-28T12:34Z",
   "source": {
    "name": "Parking Meters Updates 2026",
    "agency": "City of Santa Monica",
    "url": "https://gis.santamonica.gov/server/rest/services/Parking_Meters_Updates_2026/MapServer/1",
    "license": "Santa Monica open data"
   },
-  "seconds": 7,
+  "seconds": 2,
   "as_of": "2026",
   "years": {
    "2026": 5710
@@ -292,7 +378,7 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:27Z",
+  "built": "2026-11-28T12:34Z",
   "source": {
    "name": "Parking Meters",
    "agency": "City of Pasadena",
@@ -327,7 +413,7 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:27Z",
+  "built": "2026-11-28T12:34Z",
   "source": {
    "name": "Parking Meter Districts",
    "agency": "City of Pasadena",
@@ -362,14 +448,14 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:27Z",
+  "built": "2026-11-28T12:34Z",
   "source": {
    "name": "Preferential Parking",
    "agency": "City of Santa Monica",
    "url": "https://gis.santamonica.gov/server/rest/services/Preferential_Parking/MapServer/0",
    "license": "Santa Monica open data"
   },
-  "seconds": 2,
+  "seconds": 1,
   "as_of": "2026-07-23",
   "years": {
    "2026": 1647
@@ -397,14 +483,14 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:27Z",
+  "built": "2026-11-28T12:34Z",
   "source": {
    "name": "Posted Street Sweeping Routes",
    "agency": "LA Sanitation",
    "url": "https://services1.arcgis.com/PTh9WC0Sf2WS7AAq/arcgis/rest/services/Posted_Street_Sweeping_Routes_Update/FeatureServer/0",
    "license": "Public ArcGIS layer"
   },
-  "seconds": 8,
+  "seconds": 6,
   "as_of": "2026-10-19",
   "years": {
    "2026": 871
@@ -432,14 +518,14 @@
    "no_location": 3,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:27Z",
+  "built": "2026-11-28T12:34Z",
   "source": {
    "name": "Road Maintenance Division Street Sweeping Routes",
    "agency": "LA County Public Works",
    "url": "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Los_Angeles_County_Public_Works_Road_Maintenance_Division_Street_Sweeping_Routes/FeatureServer/0",
    "license": "LA County open data"
   },
-  "seconds": 16,
+  "seconds": 12,
   "as_of": "2026-11-05",
   "years": {
    "2026": 27871
@@ -467,14 +553,14 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:28Z",
+  "built": "2026-11-28T12:34Z",
   "source": {
    "name": "Street Sweeping",
    "agency": "City of Long Beach",
    "url": "https://services6.arcgis.com/yCArG7wGXGyWLqav/arcgis/rest/services/Street_Sweeping/FeatureServer/0",
    "license": "Long Beach open data"
   },
-  "seconds": 1,
+  "seconds": 0,
   "as_of": "2024-11-08",
   "years": {
    "2024": 336

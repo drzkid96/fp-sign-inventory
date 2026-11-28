@@ -18,7 +18,6 @@
   "url": "data/sources/speed_surveys.json",
   "license": "Public records"
  },
- "source_fields": null,
  "seconds": 6,
  "years": {},
  "reports": [
@@ -57,5 +56,7 @@
    "url": "https://www.southpasadenaca.gov/files/assets/public/v/1/boards-and-commissions/documents/public-works-infrastructure-commission/00-20260211-pwic-agenda-packet.pdf",
    "error": "download refused (403); put the PDF in inputs/speed-surveys/"
   }
- ]
+ ],
+ "error": "FeatureError: Could not add feature to layer at index 4: Attempt to write non-linestring (POINT) geometry to ARC type shapefile.",
+ "failed": "2026-11-28T12:33Z"
 }
