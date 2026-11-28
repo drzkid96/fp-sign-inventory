@@ -12,14 +12,14 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:33Z",
+  "built": "2026-11-28T12:37Z",
   "source": {
    "name": "Caltrans Traffic Census, Traffic Volumes AADT",
    "agency": "Caltrans",
    "url": "https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/Traffic_AADT/FeatureServer/0",
    "license": "Public, State of California"
   },
-  "seconds": 2,
+  "seconds": 1,
   "years": {
    "2023": 1571
   },
@@ -39,28 +39,28 @@
   "group": "volumes",
   "geom": "point",
   "kind": "observed",
-  "count": 6050,
+  "count": 6221,
   "dropped": {
    "before_limit": 0,
    "undated": 0,
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:33Z",
+  "built": "2026-11-28T12:38Z",
   "source": {
    "name": "LA County Traffic Count (PW Open Data)",
    "agency": "LA County Public Works",
    "url": "https://dpw.gis.lacounty.gov/dpw/rest/services/PW_Open_Data/MapServer/59",
    "license": "LA County open data"
   },
-  "seconds": 26,
+  "seconds": 20,
   "years": {
    "2021": 120,
-   "2022": 1196,
-   "2023": 1566,
-   "2024": 1375,
-   "2025": 1139,
-   "2026": 654
+   "2022": 1282,
+   "2023": 1608,
+   "2024": 1404,
+   "2025": 1144,
+   "2026": 663
   },
   "field_map": {
    "adt": "TOTAL_VOLUME",
@@ -95,48 +95,48 @@
    "WHITESIDE STREET W/O DUNN AVENUE",
    "HICKS AVENUE S/O STORY STREET"
   ],
-  "not_located": 667,
+  "not_located": 496,
   "not_located_examples": [
    "KANAN ROAD S/O CORNELL WAY",
    "ROOSEVELT AVENUE S/O OAKDALE STREET",
    "ROOSEVELT AVENUE S/O OAKDALE STREET",
-   "AVENUE S-10 E/O 98TH STREET EAST",
-   "AVENUE T W/O 101ST STREET EAST",
-   "AVENUE E W/O 90TH STREET EAST",
-   "AVENUE E W/O 90TH STREET EAST",
-   "AVENUE E W/O 90TH STREET EAST",
-   "AVENUE E W/O 90TH STREET EAST",
-   "AVENUE E W/O 90TH STREET EAST",
    "LOPEZ CANYON ROAD N/O BOY SCOUT MOTORWAY",
    "AVENUE M-12 W/O 51ST STREET WEST",
    "AVENUE M-12 E/O VENTANA DRIVE",
-   "AVENUE P W/O 50TH STREET EAST",
    "AVENUE M-12 W/O VENTANA DRIVE",
    "AVENUE M-4 E/O 50TH STREET WEST",
    "SHINN ROAD E/O MOUNT BALDY ROAD",
    "SHINN ROAD E/O MOUNT BALDY ROAD",
    "SHINN ROAD E/O MOUNT BALDY ROAD",
-   "AVENUE M E/O 50TH STREET WEST",
-   "AVENUE M E/O 50TH STREET WEST",
-   "AVENUE M E/O 50TH STREET WEST",
-   "AVENUE M E/O 50TH STREET WEST",
-   "AVENUE M E/O 50TH STREET WEST",
    "80TH STREET WEST N/O AVENUE E-12",
    "EL SEGUNDO BOULEVARD E/O LAGUNA DOMINGUEZ TRAIL",
    "80TH STREET WEST N/O AVENUE E-4",
-   "80TH STREET WEST N/O AVENUE E",
-   "80TH STREET WEST N/O AVENUE G",
    "MULHOLLAND HIGHWAY W/O MM 14.51",
    "MULHOLLAND HIGHWAY W/O MM 14.51",
-   "80TH STREET WEST S/O AVENUE D",
-   "80TH STREET WEST S/O AVENUE F",
    "ROOSEVELT AVENUE S/O OAKDALE STREET",
    "STUNT ROAD E/O MM 1.94",
    "STUNT ROAD E/O MM 3.17",
    "ROOSEVELT AVENUE S/O OAKDALE STREET",
    "AVENUE L-6 W/O 42ND STREET WEST",
    "KANAN DUME ROAD S/O DUME CANYON MOTORWAY",
-   "LONGVIEW ROAD S/O AVENUE W-4"
+   "LONGVIEW ROAD S/O AVENUE W-4",
+   "LONGVIEW ROAD S/O AVENUE W-13 (N)",
+   "AVENUE A W/O LAUREL STREET",
+   "AVENUE A W/O LAUREL STREET",
+   "AVENUE A W/O LAUREL STREET",
+   "AVENUE A W/O LAUREL STREET",
+   "KANAN DUME ROAD N/O ZUMA EDISON ROAD",
+   "MARQUESAS WAY W/O CORNWALL WAY",
+   "COLD CANYON ROAD N/O MM 1.55",
+   "135TH STREET E/O LAGUNA DOMINGUEZ TRAIL",
+   "MOUNT BALDY ROAD N/O SHINN ROAD",
+   "MOUNT BALDY ROAD N/O SHINN ROAD",
+   "MOUNT BALDY ROAD N/O SHINN ROAD",
+   "MOUNT BALDY ROAD N/O SHINN ROAD",
+   "MOUNT BALDY ROAD N/O SHINN ROAD",
+   "MOUNT BALDY ROAD N/O SHINN ROAD",
+   "MOUNT BALDY ROAD N/O SHINN ROAD",
+   "MOUNT BALDY ROAD S/O MOUNTAIN AVENUE"
   ],
   "tiles": "data/layers/lacounty_adt.pmtiles",
   "files": {
@@ -161,7 +161,7 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:33Z",
+  "built": "2026-11-28T12:38Z",
   "source": {
    "name": "Glendale ADT Segments (existing 2024 column only)",
    "agency": "City of Glendale (consultant-published)",
@@ -188,22 +188,24 @@
   "group": "speeds",
   "geom": "line",
   "kind": "observed",
-  "count": 0,
+  "count": 57,
   "dropped": {
    "before_limit": 0,
    "undated": 0,
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:26Z",
+  "built": "2026-11-28T12:38Z",
   "source": {
    "name": "City Engineering and Traffic Survey reports",
    "agency": "Each city (listed per record)",
    "url": "data/sources/speed_surveys.json",
    "license": "Public records"
   },
-  "seconds": 6,
-  "years": {},
+  "seconds": 1,
+  "years": {
+   "2022": 57
+  },
   "reports": [
    {
     "city": "West Hollywood",
@@ -239,10 +241,25 @@
     "title": "2025 Citywide E&TS (Feb 2026 commission packet)",
     "url": "https://www.southpasadenaca.gov/files/assets/public/v/1/boards-and-commissions/documents/public-works-infrastructure-commission/00-20260211-pwic-agenda-packet.pdf",
     "error": "download refused (403); put the PDF in inputs/speed-surveys/"
+   },
+   {
+    "city": "Manhattan Beach",
+    "year": 2022,
+    "title": "2022 Volume and Speed Counts (Engineering and Traffic Survey summary table)",
+    "url": "https://www.manhattanbeach.gov/home/showpublisheddocument/53536/638369612250170000",
+    "rows": 57,
+    "located": 57
    }
   ],
-  "error": "FeatureError: Could not add feature to layer at index 4: Attempt to write non-linestring (POINT) geometry to ARC type shapefile.",
-  "failed": "2026-11-28T12:33Z"
+  "tiles": "data/layers/speed_surveys.pmtiles",
+  "files": {
+   "GeoJSON": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/speed_surveys.geojson",
+   "CSV": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/speed_surveys.csv",
+   "GeoPackage": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/speed_surveys.gpkg",
+   "KMZ": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/speed_surveys.kmz",
+   "Shapefile": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/speed_surveys_shp.zip",
+   "DXF (CA SP 5, ft)": "https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/speed_surveys_2229.dxf"
+  }
  },
  "ladot_walkbike": {
   "id": "ladot_walkbike",
@@ -257,14 +274,14 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:33Z",
+  "built": "2026-11-28T12:38Z",
   "source": {
    "name": "LADOT Walk & Bike Count 2021, 2023, 2025",
    "agency": "LADOT",
    "url": "https://data.lacity.org/d/hiwe-xzrt",
    "license": "Los Angeles Open Data"
   },
-  "seconds": 14,
+  "seconds": 10,
   "years": {
    "2021": 93,
    "2023": 76,
@@ -308,14 +325,14 @@
    "no_location": 0,
    "outside_county": 10
   },
-  "built": "2026-11-28T12:33Z",
+  "built": "2026-11-28T12:38Z",
   "source": {
    "name": "LADOT Metered Parking Inventory & Policies",
    "agency": "LADOT",
    "url": "https://data.lacity.org/d/s49e-q6j2",
    "license": "Los Angeles Open Data"
   },
-  "seconds": 7,
+  "seconds": 2,
   "as_of": "2026-11-27",
   "years": {
    "2026": 35042
@@ -343,14 +360,14 @@
    "no_location": 0,
    "outside_county": 691
   },
-  "built": "2026-11-28T12:34Z",
+  "built": "2026-11-28T12:38Z",
   "source": {
    "name": "Parking Meters Updates 2026",
    "agency": "City of Santa Monica",
    "url": "https://gis.santamonica.gov/server/rest/services/Parking_Meters_Updates_2026/MapServer/1",
    "license": "Santa Monica open data"
   },
-  "seconds": 2,
+  "seconds": 4,
   "as_of": "2026",
   "years": {
    "2026": 5710
@@ -378,14 +395,14 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:34Z",
+  "built": "2026-11-28T12:38Z",
   "source": {
    "name": "Parking Meters",
    "agency": "City of Pasadena",
    "url": "https://services2.arcgis.com/zNjnZafDYCAJAbN0/arcgis/rest/services/Parking_Meters/FeatureServer/0",
    "license": "Pasadena open data"
   },
-  "seconds": 1,
+  "seconds": 0,
   "as_of": "2023-03-22",
   "years": {
    "2023": 897
@@ -413,7 +430,7 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:34Z",
+  "built": "2026-11-28T12:38Z",
   "source": {
    "name": "Parking Meter Districts",
    "agency": "City of Pasadena",
@@ -448,7 +465,7 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:34Z",
+  "built": "2026-11-28T12:38Z",
   "source": {
    "name": "Preferential Parking",
    "agency": "City of Santa Monica",
@@ -483,14 +500,14 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:34Z",
+  "built": "2026-11-28T12:38Z",
   "source": {
    "name": "Posted Street Sweeping Routes",
    "agency": "LA Sanitation",
    "url": "https://services1.arcgis.com/PTh9WC0Sf2WS7AAq/arcgis/rest/services/Posted_Street_Sweeping_Routes_Update/FeatureServer/0",
    "license": "Public ArcGIS layer"
   },
-  "seconds": 6,
+  "seconds": 7,
   "as_of": "2026-10-19",
   "years": {
    "2026": 871
@@ -518,14 +535,14 @@
    "no_location": 3,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:34Z",
+  "built": "2026-11-28T12:39Z",
   "source": {
    "name": "Road Maintenance Division Street Sweeping Routes",
    "agency": "LA County Public Works",
    "url": "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Los_Angeles_County_Public_Works_Road_Maintenance_Division_Street_Sweeping_Routes/FeatureServer/0",
    "license": "LA County open data"
   },
-  "seconds": 12,
+  "seconds": 15,
   "as_of": "2026-11-05",
   "years": {
    "2026": 27871
@@ -553,14 +570,14 @@
    "no_location": 0,
    "outside_county": 0
   },
-  "built": "2026-11-28T12:34Z",
+  "built": "2026-11-28T12:39Z",
   "source": {
    "name": "Street Sweeping",
    "agency": "City of Long Beach",
    "url": "https://services6.arcgis.com/yCArG7wGXGyWLqav/arcgis/rest/services/Street_Sweeping/FeatureServer/0",
    "license": "Long Beach open data"
   },
-  "seconds": 0,
+  "seconds": 1,
   "as_of": "2024-11-08",
   "years": {
    "2024": 336

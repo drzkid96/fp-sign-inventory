@@ -11,7 +11,7 @@
   "no_location": 0,
   "outside_county": 0
  },
- "built": "2026-11-28T12:34Z",
+ "built": "2026-11-28T12:38Z",
  "source": {
   "name": "Parking Meters",
   "agency": "City of Pasadena",
@@ -39,7 +39,7 @@
   "last_edited_user",
   "last_edited_date"
  ],
- "seconds": 1,
+ "seconds": 0,
  "as_of": "2023-03-22",
  "years": {
   "2023": 897

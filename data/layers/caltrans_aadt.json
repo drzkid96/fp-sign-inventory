@@ -11,7 +11,7 @@
   "no_location": 0,
   "outside_county": 0
  },
- "built": "2026-11-28T12:33Z",
+ "built": "2026-11-28T12:37Z",
  "source": {
   "name": "Caltrans Traffic Census, Traffic Volumes AADT",
   "agency": "Caltrans",
@@ -35,7 +35,7 @@
   "AHEAD_PEAK_MADT",
   "AHEAD_AADT"
  ],
- "seconds": 2,
+ "seconds": 1,
  "years": {
   "2023": 1571
  },
