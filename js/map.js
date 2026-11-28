@@ -1,11 +1,13 @@
 /* LA County street inventory map.
-   Signs from three sources drawn as their sign faces (artwork from the standards site), a card per sign with its photo,
-   build-order tiles, photo years and signals as context. */
+   Three sign sources (our scanned inventory, Mapillary detections, county records) are merged on screen:
+   one symbol per physical sign, drawn as its sign face, with every source that saw it listed on its card. */
 const C = window.CFG, $ = s => document.querySelector(s), V = '?v=' + (C.DATA_V || 1);
 const SSS = 'https://drzkid96.github.io/SoCal-Super-Standards';
-const SRC = {fp: {c: '#1B795A', t: 'SCANNED'}, mly: {c: '#568CBB', t: 'INSTANT'}, county: {c: '#00242E', t: 'COUNTY RECORD'}};
+const SRC = {fp: {c: '#1B795A', t: 'Scanned'}, county: {c: '#00242E', t: 'County record'}, mly: {c: '#568CBB', t: 'Mapillary'}};
+const ORDER = ['fp', 'county', 'mly'];
 const P_COL = ['#00574A', '#1B795A', '#6BD688', '#B9E6B4', '#E4EFE2'];
 const Y_BRK = [[0, '#C9D3D5', '<2018'], [2018, '#9FB3B8', '18-19'], [2020, '#6BD688', '20-21'], [2022, '#1B795A', '22-23'], [2024, '#00242E', '2024+']];
+const MERGE_M = 12, ICON_Z = 15.5;
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 const day = ms => ms ? new Date(+ms).toISOString().slice(0, 10) : '';
 const keyOf = c => String(c || '').toLowerCase().replace(/[() ]/g, '');
@@ -13,260 +15,260 @@ const famKey = c => keyOf(String(c || '').split('/')[0].replace(/\s*\(\d+\)\s*$/
 const sv = (lat, lon) => `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat.toFixed(6)},${lon.toFixed(6)}`;
 const mlyAt = (lat, lon) => `https://www.mapillary.com/app/?lat=${lat.toFixed(6)}&lng=${lon.toFixed(6)}&z=19`;
 const graph = (path, q = '') => fetch(`https://graph.mapillary.com/${path}${path.includes('?') ? '&' : '?'}${q}&access_token=${encodeURIComponent(C.MLY)}`).then(r => r.json());
+const metres = (a, b) => Math.hypot((a[0] - b[0]) * 92300, (a[1] - b[1]) * 110540);
 
 const proto = new pmtiles.Protocol(); maplibregl.addProtocol('pmtiles', proto.tile);
-const map = new maplibregl.Map({
-  container: 'map', center: [-118.25, 34.05], zoom: 9.3, minZoom: 8, maxZoom: 20.5, hash: true, attributionControl: {compact: true},
-  style: {version: 8, glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf', sources: {
-    osm: {type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 19, attribution: '© OpenStreetMap contributors'},
-    usgs: {type: 'raster', tiles: ['https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 16, attribution: 'USGS'},
-    esri: {type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 20, attribution: 'Imagery © Esri'}},
-    layers: [{id: 'base-map', type: 'raster', source: 'osm', paint: {'raster-saturation': -0.9, 'raster-brightness-min': 0.15, 'raster-contrast': -0.15}},
-             {id: 'base-usgs', type: 'raster', source: 'usgs', maxzoom: 15, layout: {visibility: 'none'}},
-             {id: 'base-esri', type: 'raster', source: 'esri', minzoom: 15, layout: {visibility: 'none'}}]},
-});
+const map = new maplibregl.Map({container: 'map', style: 'https://tiles.openfreemap.org/styles/positron', center: [-118.25, 34.05], zoom: 9.3,
+  minZoom: 8, maxZoom: 21, hash: true, attributionControl: {compact: true}});
 map.addControl(new maplibregl.NavigationControl({showCompass: false}), 'bottom-right');
 map.addControl(new maplibregl.GeolocateControl({positionOptions: {enableHighAccuracy: true}}), 'bottom-right');
 map.addControl(new maplibregl.ScaleControl({unit: 'imperial'}), 'bottom-left');
 
-let IDX = {}, CMAP = {}, TRUST = {}, CITIES = [];
-const groups = {tiles: ['tiles-fill', 'tiles-line'], photos: ['ph-seq'], signals: ['signals'],
-  fp: ['fp-dot', 'fp-ico'], mly: ['mly-dot', 'mly-ico'], county: ['county-dot', 'county-ico']};
-const SIGN_LAYERS = ['fp-ico', 'fp-dot', 'county-ico', 'county-dot', 'mly-ico', 'mly-dot'];
-const vis = (ids, on) => ids.forEach(id => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none'));
+let IDX = {}, CMAP = {}, TRUST = {}, CITIES = [], FP = [], RAW = new Map();
+const on = k => document.querySelector(`.chips [data-layer="${k}"]`)?.classList.contains('on');
+const vis = (ids, v) => ids.forEach(id => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', v ? 'visible' : 'none'));
 
-/* sign face images: 'sg:<key>' from the icon set, or a plain code tag when there is no artwork */
+/* sign faces */
 const resolve = k => IDX[k]?.icon ? k : IDX[k + 'ca']?.icon ? k + 'ca' : null;
-function tag(text) {
-  const s = 2, f = 13 * s, cv = document.createElement('canvas'), x = cv.getContext('2d');
-  x.font = `700 ${f}px Albert Sans, sans-serif`; const w = Math.ceil(x.measureText(text).width) + 12 * s, h = f + 10 * s;
-  cv.width = w; cv.height = h; x.font = `700 ${f}px Albert Sans, sans-serif`;
-  x.fillStyle = '#fff'; x.strokeStyle = '#00242E'; x.lineWidth = 2 * s; x.beginPath(); x.roundRect(s, s, w - 2 * s, h - 2 * s, 4 * s); x.fill(); x.stroke();
-  x.fillStyle = '#00242E'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, w / 2, h / 2 + s);
-  return {width: w, height: h, data: new Uint8Array(x.getImageData(0, 0, w, h).data.buffer)};
-}
-/* faces that carry a number are drawn with the actual value: R2-1 speed limit, W13-1P advisory speed */
+const NUMERIC = ['r2-1', 'w13-1p'];
+const faceKey = (k, v) => NUMERIC.includes(k) ? k + '@' + (/^\d+$/.test(String(v || '')) ? v : '?') : k;
 function speedSVG(code, v) {
   if (code === 'w13-1p') return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect x="2" y="2" width="56" height="56" rx="5" fill="#FDBE0F" stroke="#000" stroke-width="3"/><text x="30" y="34" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="26" text-anchor="middle">${v}</text><text x="30" y="51" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="12" text-anchor="middle">MPH</text></svg>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 60"><rect x="1.5" y="1.5" width="45" height="57" rx="3" fill="#fff" stroke="#000" stroke-width="2"/><rect x="4" y="4" width="40" height="52" rx="2" fill="none" stroke="#000" stroke-width="1.5"/><text x="24" y="17" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="9" text-anchor="middle">SPEED</text><text x="24" y="27" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="9" text-anchor="middle">LIMIT</text><text x="24" y="51" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="24" text-anchor="middle">${v}</text></svg>`;
 }
-const NUMERIC = ['r2-1', 'w13-1p'];
-const faceKey = (k, v) => NUMERIC.includes(k) && /^\d+$/.test(String(v || '')) ? k + '@' + v : k;
 function svgImage(svg, h) {
   return new Promise((ok, no) => { const im = new Image(); im.onload = () => { const r = im.width / im.height || 0.8, cv = document.createElement('canvas');
     cv.height = h; cv.width = Math.round(h * r); const x = cv.getContext('2d'); x.drawImage(im, 0, 0, cv.width, cv.height);
     ok({width: cv.width, height: cv.height, data: new Uint8Array(x.getImageData(0, 0, cv.width, cv.height).data.buffer)}); };
     im.onerror = no; im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); });
 }
-async function loadIcons(keys) {
-  await Promise.all([...new Set(keys)].filter(k => k && !map.hasImage('sg:' + k)).map(async k => {
-    if (k.includes('@')) { const [c, v] = k.split('@');
-      try { const im = await svgImage(speedSVG(c, v), 128); if (!map.hasImage('sg:' + k)) map.addImage('sg:' + k, im, {pixelRatio: 2}); return; } catch (e) {} }
-    const r = resolve(k.split('@')[0]);
-    try {
-      if (!r) throw 0;
-      const img = await map.loadImage(`assets/signs/${r}.png`);
-      if (!map.hasImage('sg:' + k)) map.addImage('sg:' + k, img.data, {pixelRatio: 2});
-    } catch (e) { if (!map.hasImage('sg:' + k)) map.addImage('sg:' + k, tag((IDX[k]?.code || k).toUpperCase()), {pixelRatio: 2}); }
-  }));
+function tag(text) {
+  const s = 2, f = 12 * s, cv = document.createElement('canvas'), x = cv.getContext('2d');
+  x.font = `700 ${f}px Albert Sans, sans-serif`; const w = Math.ceil(x.measureText(text).width) + 10 * s, h = f + 9 * s;
+  cv.width = w; cv.height = h; x.font = `700 ${f}px Albert Sans, sans-serif`;
+  x.fillStyle = '#fff'; x.strokeStyle = '#5b7278'; x.lineWidth = 1.5 * s; x.setLineDash([3 * s, 2 * s]); x.beginPath(); x.roundRect(s, s, w - 2 * s, h - 2 * s, 3 * s); x.fill(); x.stroke();
+  x.fillStyle = '#00242E'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, w / 2, h / 2 + s);
+  return {width: w, height: h, data: new Uint8Array(x.getImageData(0, 0, w, h).data.buffer)};
 }
-map.on('styleimagemissing', e => { if (e.id.startsWith('sg:') && !map.hasImage(e.id)) map.addImage(e.id, tag(e.id.slice(3).toUpperCase() || '?'), {pixelRatio: 2}); });
-
-/* one source of signs = a dot (always) + its sign face (close in) */
-function signLayers(id, src, extra, iconX, opacityX) {
-  const color = SRC[id].c;
-  map.addLayer(Object.assign({id: id + '-dot', type: 'circle', source: src, minzoom: 13,
-    paint: {'circle-color': color, 'circle-opacity': opacityX || 1, 'circle-stroke-opacity': opacityX || 1,
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 2.2, 16, 4, 19, 6], 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.2}}, extra));
-  map.addLayer(Object.assign({id: id + '-ico', type: 'symbol', source: src, minzoom: 15.5,
-    layout: {'icon-image': iconX, 'icon-size': ['interpolate', ['linear'], ['zoom'], 15.5, 0.42, 18, 0.7, 20, 0.95],
-      'icon-allow-overlap': false, 'icon-padding': 1, 'icon-anchor': 'bottom', 'icon-offset': [0, -4]},
-    paint: {'icon-opacity': opacityX || 1}}, extra));
+const loading = new Set();
+async function face(k) {
+  if (!k || map.hasImage('sg:' + k) || loading.has(k)) return; loading.add(k);
+  try {
+    if (k.includes('@')) { const [c, v] = k.split('@'); map.addImage('sg:' + k, await svgImage(speedSVG(c, v), 128), {pixelRatio: 2}); return; }
+    const r = resolve(k); if (!r) throw 0;
+    const img = await map.loadImage(`assets/signs/${r}.png`); if (!map.hasImage('sg:' + k)) map.addImage('sg:' + k, img.data, {pixelRatio: 2});
+  } catch (e) { if (!map.hasImage('sg:' + k)) map.addImage('sg:' + k, tag((IDX[k]?.code || k.split('@')[0]).toUpperCase()), {pixelRatio: 2}); }
 }
+map.on('styleimagemissing', e => { if (e.id.startsWith('sg:') && !map.hasImage(e.id)) map.addImage(e.id, tag(e.id.slice(3).split('@')[0].toUpperCase() || '?'), {pixelRatio: 2}); });
+const trustOf = code => (TRUST[String(code || '').split('/')[0].split('(')[0].trim()] || {trust: 'untested'});
 
 map.on('load', async () => {
   const get = (u, d) => fetch(u + V).then(r => r.ok ? r.json() : d).catch(() => d);
-  const [tiles, idx, cmap, trust, agency] = await Promise.all([get('data/base/tiles.geojson', {features: []}), get('assets/signs/index.json', {}),
-    get('data/classmap.json', {}), get('data/base/trust.json', {codes: {}}), get('data/base/agency.json', null)]);
+  const [tiles, idx, cmap, trust, agency, fp] = await Promise.all([get('data/base/tiles.geojson', {features: []}), get('assets/signs/index.json', {}),
+    get('data/classmap.json', {}), get('data/base/trust.json', {codes: {}}), get('data/base/agency.json', null), get('data/base/fp.geojson', {features: []})]);
   IDX = idx; CMAP = cmap; TRUST = trust.codes || {};
+  FP = fp.features.filter(f => !f.properties.name);
+
+  // aerial sits under the street names
+  const firstLabel = map.getStyle().layers.find(l => l.type === 'symbol')?.id;
+  map.addSource('usgs', {type: 'raster', tiles: ['https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 16, attribution: 'USGS'});
+  map.addSource('esri', {type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 20, attribution: 'Imagery © Esri'});
+  map.addLayer({id: 'base-usgs', type: 'raster', source: 'usgs', maxzoom: 15, layout: {visibility: 'none'}}, firstLabel);
+  map.addLayer({id: 'base-esri', type: 'raster', source: 'esri', minzoom: 15, layout: {visibility: 'none'}}, firstLabel);
 
   // build order tiles
   map.addSource('tiles', {type: 'geojson', data: tiles});
-  map.addLayer({id: 'tiles-fill', type: 'fill', source: 'tiles', paint: {'fill-color': ['match', ['get', 'p'], 1, P_COL[0], 2, P_COL[1], 3, P_COL[2], 4, P_COL[3], P_COL[4]],
-    'fill-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0.6, 12, 0.3, 14, 0.06, 15, 0]}});
-  map.addLayer({id: 'tiles-line', type: 'line', source: 'tiles', minzoom: 11, maxzoom: 15, paint: {'line-color': '#fff', 'line-width': 0.6, 'line-opacity': 0.6}});
+  map.addLayer({id: 'tiles-fill', type: 'fill', source: 'tiles', maxzoom: 15, paint: {'fill-color': ['match', ['get', 'p'], 1, P_COL[0], 2, P_COL[1], 3, P_COL[2], 4, P_COL[3], P_COL[4]],
+    'fill-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0.55, 12, 0.28, 14, 0.05]}}, firstLabel);
 
-  // photo years (Mapillary sequences)
+  // photo years
   const yearX = ['step', ['to-number', ['get', 'captured_at'], 0], Y_BRK[0][1]].concat(Y_BRK.slice(1).flatMap(([y, c]) => [Date.UTC(y, 0, 1), c]));
   map.addSource('mlycov', {type: 'vector', tiles: [`https://tiles.mapillary.com/maps/vtp/mly1_public/2/{z}/{x}/{y}?access_token=${C.MLY}`], minzoom: 6, maxzoom: 14, attribution: 'Photos © Mapillary'});
   map.addLayer({id: 'ph-seq', type: 'line', source: 'mlycov', 'source-layer': 'sequence', minzoom: 11, layout: {visibility: 'none', 'line-cap': 'round'},
-    paint: {'line-color': yearX, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 17, 4], 'line-opacity': 0.9}});
+    paint: {'line-color': yearX, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 17, 4], 'line-opacity': 0.85}}, firstLabel);
 
-  // county records and signals
+  // raw sources: dots when zoomed out; invisible but loaded close in, where the merged layer takes over
+  const dot = (id, src, extra, op) => map.addLayer(Object.assign({id: id + '-dot', type: 'circle', source: src, minzoom: 12,
+    paint: {'circle-color': SRC[id].c, 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 1.8, 15, 3.5],
+      'circle-opacity': ['step', ['zoom'], op || 1, ICON_Z, 0], 'circle-stroke-color': '#fff', 'circle-stroke-width': ['step', ['zoom'], 1, ICON_Z, 0]}}, extra));
   const nCounty = agency?.county_signs?.count || 0, nSig = agency?.county_signals?.count || 0;
   if (agency) {
     map.addSource('ag', {type: 'vector', url: 'pmtiles://' + new URL('data/base/agency.pmtiles', location.href).href});
-    signLayers('county', 'ag', {'source-layer': 'signs'}, ['concat', 'sg:', ['coalesce', ['get', 'key'], ['downcase', ['get', 'code']]]]);
+    dot('county', 'ag', {'source-layer': 'signs'});
     map.addLayer({id: 'signals', type: 'circle', source: 'ag', 'source-layer': 'signals', minzoom: 11, layout: {visibility: 'none'},
       paint: {'circle-color': '#FF6622', 'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 2.5, 18, 7], 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.5}});
-    $('#county-dd').textContent = `LA County Public Works inventory, ${nCounty.toLocaleString()} signs in unincorporated areas (downloaded ${agency.county_signs.downloaded}).`;
+    $('#county-dd').textContent = `LA County Public Works sign records, ${nCounty.toLocaleString()} signs in unincorporated areas (downloaded ${agency.county_signs.downloaded}).`;
   }
   if (!nCounty) document.querySelector('[data-layer="county"]').disabled = true;
   if (!nSig) document.querySelector('[data-layer="signals"]').disabled = true;
-
-  // instant (Mapillary detections, code translated, faded by trust)
-  const iconOf = {}, trustOf = {likely: [], mixed: []};
-  for (const [v, m] of Object.entries(CMAP)) {
-    const k = famKey(m.code); if (!k) continue; iconOf[v] = faceKey(k, m.val);
-    const t = (TRUST[String(m.code).split('/')[0].split('(')[0].trim()] || {}).trust; if (trustOf[t]) trustOf[t].push(v);
-  }
-  const vals = Object.keys(iconOf);
-  const mIcon = vals.length ? ['match', ['get', 'value'], ...vals.flatMap(v => [v, 'sg:' + iconOf[v]]), 'sg:'] : 'sg:';
-  const mOp = ['match', ['get', 'value']]; if (trustOf.likely.length) mOp.push(trustOf.likely, 1); if (trustOf.mixed.length) mOp.push(trustOf.mixed, 0.75); mOp.push(0.4);
+  const vals = Object.keys(CMAP).filter(v => famKey(CMAP[v].code));
   map.addSource('mlysign', {type: 'vector', tiles: [`https://tiles.mapillary.com/maps/vtp/mly_map_feature_traffic_sign/2/{z}/{x}/{y}?access_token=${C.MLY}`], minzoom: 14, maxzoom: 14});
-  signLayers('mly', 'mlysign', {'source-layer': 'traffic_sign', filter: ['in', ['get', 'value'], ['literal', vals]]}, mIcon, mOp);
+  dot('mly', 'mlysign', {'source-layer': 'traffic_sign', minzoom: 14, filter: ['in', ['get', 'value'], ['literal', vals]]}, 0.8);
+  map.addSource('fp', {type: 'geojson', data: {type: 'FeatureCollection', features: FP}});
+  dot('fp', 'fp', {});
 
-  // scanned (our model)
-  const fp = await get('data/base/fp.geojson', {type: 'FeatureCollection', features: []});
-  fp.features = fp.features.filter(f => !f.properties.name);
-  fp.features.forEach(f => { const p = f.properties, k = famKey(p.code), v = p.val || (String(p.code).match(/\((\d+)\)$/) || [])[1]; p.key = faceKey(k, v); });
-  map.addSource('fp', {type: 'geojson', data: fp});
-  signLayers('fp', 'fp', {}, ['concat', 'sg:', ['get', 'key']]);
+  // merged signs (one symbol per physical sign)
+  map.addSource('signs', {type: 'geojson', data: {type: 'FeatureCollection', features: []}});
+  map.addLayer({id: 'signs-halo', type: 'circle', source: 'signs', minzoom: ICON_Z, paint: {
+    'circle-radius': ['interpolate', ['linear'], ['zoom'], ICON_Z, 12, 19, 22], 'circle-color': '#fff', 'circle-opacity': 0.9,
+    'circle-stroke-color': ['get', 'ring'], 'circle-stroke-width': ['case', ['>', ['get', 'n'], 1], 3.5, 2], 'circle-stroke-opacity': ['get', 'op']}});
+  map.addLayer({id: 'signs-face', type: 'symbol', source: 'signs', minzoom: ICON_Z, layout: {'icon-image': ['concat', 'sg:', ['get', 'face']],
+    'icon-size': ['interpolate', ['linear'], ['zoom'], ICON_Z, 0.32, 19, 0.55], 'icon-allow-overlap': true, 'icon-anchor': 'center',
+    'symbol-sort-key': ['get', 'rank']}, paint: {'icon-opacity': ['get', 'op']}});
+  map.addLayer({id: 'signs-n', type: 'symbol', source: 'signs', minzoom: 17, filter: ['>', ['get', 'n'], 1], layout: {'text-field': ['to-string', ['get', 'n']],
+    'text-font': ['Noto Sans Bold'], 'text-size': 10, 'text-offset': [1.35, -1.35], 'text-allow-overlap': true},
+    paint: {'text-color': '#fff', 'text-halo-color': '#1B795A', 'text-halo-width': 4}});
 
-  await loadIcons([...Object.values(iconOf), ...fp.features.map(f => f.properties.key), ...(agency?.county_signs?.keys || [])]);
-
-  // legends
+  // legends and search list
   $('#ramp-tiles').innerHTML = P_COL.map((c, i) => `<span style="background:${c}" class="${i > 1 ? 'dk' : ''}">P${i + 1}</span>`).join('');
   $('#ramp-photos').innerHTML = Y_BRK.map(([, c, t], i) => `<span style="background:${c}" class="${i < 3 ? 'dk' : ''}">${t}</span>`).join('');
-
-  // cities for search
   const cs = {};
-  for (const f of tiles.features) {
-    const p = f.properties; if (p.city === 'Unincorporated') continue;
+  for (const f of tiles.features) { const p = f.properties; if (p.city === 'Unincorporated') continue;
     const c = cs[p.city] ||= {name: p.city, rank: 1e9, b: [180, 90, -180, -90]}; c.rank = Math.min(c.rank, p.rank);
-    for (const [x, y] of f.geometry.coordinates[0]) { c.b[0] = Math.min(c.b[0], x); c.b[1] = Math.min(c.b[1], y); c.b[2] = Math.max(c.b[2], x); c.b[3] = Math.max(c.b[3], y); }
-  }
+    for (const [x, y] of f.geometry.coordinates[0]) { c.b[0] = Math.min(c.b[0], x); c.b[1] = Math.min(c.b[1], y); c.b[2] = Math.max(c.b[2], x); c.b[3] = Math.max(c.b[3], y); } }
   CITIES = Object.values(cs).sort((a, b) => a.rank - b.rank);
 
   // toggles
+  const groups = {tiles: ['tiles-fill'], photos: ['ph-seq'], signals: ['signals'], fp: ['fp-dot'], mly: ['mly-dot'], county: ['county-dot']};
   document.querySelectorAll('.chips button[data-layer]').forEach(b => {
-    const apply = () => { vis(groups[b.dataset.layer] || [], b.classList.contains('on')); if (b.dataset.layer === 'tiles') $('#ramp-tiles').hidden = !b.classList.contains('on');
-      if (b.dataset.layer === 'photos') $('#ramp-photos').hidden = !b.classList.contains('on'); hint(); };
+    const apply = () => { vis(groups[b.dataset.layer] || [], b.classList.contains('on')); $('#ramp-tiles').hidden = !on('tiles'); $('#ramp-photos').hidden = !on('photos'); hint(); merge(); };
     b.onclick = () => { if (b.disabled) return; b.classList.toggle('on'); apply(); };
     if (b.disabled) b.classList.remove('on'); apply();
   });
   document.querySelectorAll('[data-base]').forEach(b => b.onclick = () => {
-    document.querySelectorAll('[data-base]').forEach(x => x.classList.toggle('on', x === b));
-    const a = b.dataset.base === 'aerial'; vis(['base-usgs', 'base-esri'], a); vis(['base-map'], !a);
+    document.querySelectorAll('[data-base]').forEach(x => x.classList.toggle('on', x === b)); vis(['base-usgs', 'base-esri'], b.dataset.base === 'aerial');
   });
-  map.on('zoomend', hint); hint();
+  map.on('moveend', merge); map.on('idle', merge); map.on('zoomend', hint); hint();
 });
 
-function hint() {
-  const on = ['fp', 'mly', 'county'].some(k => document.querySelector(`[data-layer="${k}"]`)?.classList.contains('on'));
-  const z = map.getZoom(); $('#hint').hidden = !(on && z < 15.5);
-  $('#hint').textContent = z < 13 ? 'Zoom in to see signs' : 'Zoom in closer to see sign faces';
+/* merge the three sources in view: same code family within MERGE_M metres = one sign */
+let mergeT, shown = false;
+function merge() {
+  clearTimeout(mergeT); mergeT = setTimeout(() => {
+    if (!map.getSource('signs')) return;
+    if (map.getZoom() < ICON_Z) { if (shown) { map.getSource('signs').setData({type: 'FeatureCollection', features: []}); shown = false; } return; }
+    const b = map.getBounds(), pad = 0.002, inView = ([x, y]) => x > b.getWest() - pad && x < b.getEast() + pad && y > b.getSouth() - pad && y < b.getNorth() + pad;
+    const recs = [];
+    if (on('fp')) for (const f of FP) if (inView(f.geometry.coordinates)) { const p = f.properties, k = famKey(p.code);
+      recs.push({src: 'fp', ll: f.geometry.coordinates, fam: k, face: faceKey(k, p.val || (String(p.code).match(/\((\d+)\)$/) || [])[1]), p, op: 1}); }
+    if (on('county') && map.getSource('ag')) for (const f of map.querySourceFeatures('ag', {sourceLayer: 'signs'})) { const ll = f.geometry.coordinates; if (!inView(ll)) continue;
+      const p = f.properties, k = p.key || keyOf(p.code), v = (String(p.desc || '').match(/(\d{2})\s*MPH|LIMIT\s*(\d{2})/i) || []).slice(1).find(Boolean);
+      recs.push({src: 'county', ll, fam: k, face: faceKey(k, v), p, op: 1}); }
+    if (on('mly') && map.getSource('mlysign')) for (const f of map.querySourceFeatures('mlysign', {sourceLayer: 'traffic_sign'})) { const ll = f.geometry.coordinates; if (!inView(ll)) continue;
+      const m = CMAP[f.properties.value]; if (!m) continue; const k = famKey(m.code); if (!k) continue; const t = trustOf(m.code).trust;
+      recs.push({src: 'mly', ll, fam: k, face: faceKey(k, m.val), p: f.properties, op: t === 'likely' ? 1 : t === 'mixed' ? 0.8 : 0.5}); }
+    const seen = new Set(), uniq = recs.filter(r => { const id = r.src + (r.p.id ?? r.ll.map(x => x.toFixed(6)).join()); if (seen.has(id)) return false; seen.add(id); return true; });
+    uniq.sort((a, b) => ORDER.indexOf(a.src) - ORDER.indexOf(b.src));
+    const groups = [];
+    for (const r of uniq) {
+      const g = groups.find(g => g.fam === r.fam && !g.recs.some(x => x.src === r.src && r.src !== 'mly') && metres(g.ll, r.ll) < MERGE_M);
+      if (g) g.recs.push(r); else groups.push({fam: r.fam, ll: r.ll, recs: [r]});
+    }
+    RAW = new Map(); const feats = groups.map((g, i) => { RAW.set(i, g); const top = g.recs[0], n = new Set(g.recs.map(r => r.src)).size;
+      const faceK = g.recs.find(r => r.face.includes('@') && !r.face.endsWith('@?'))?.face || top.face; face(faceK);
+      return {type: 'Feature', geometry: {type: 'Point', coordinates: top.ll}, properties: {gid: i, face: faceK, ring: SRC[top.src].c, n, op: n > 1 ? 1 : top.op, rank: ORDER.indexOf(top.src)}}; });
+    shown = true; map.getSource('signs').setData({type: 'FeatureCollection', features: feats});
+  }, 120);
 }
 
-/* panel: fold and search */
+function hint() {
+  const any = ['fp', 'mly', 'county'].some(on), z = map.getZoom(); $('#hint').hidden = !(any && z < ICON_Z);
+  $('#hint').textContent = z < 12 ? 'Zoom in to see signs' : 'Zoom in closer to see sign faces';
+}
+
+/* panel and search */
 const narrow = () => innerWidth < 700;
-const fold = on => { $('#panel').classList.toggle('folded', on); $('#fold').textContent = on ? '+' : '–'; };
+const fold = f => { $('#panel').classList.toggle('folded', f); $('#fold').textContent = f ? '+' : '–'; };
 if (narrow()) fold(true);
-$('#fold').onclick = () => { $('#panel').classList.toggle('folded'); $('#fold').textContent = $('#panel').classList.contains('folded') ? '+' : '–'; };
+$('#fold').onclick = () => fold(!$('#panel').classList.contains('folded'));
 let qT;
 $('#q').oninput = () => { clearTimeout(qT); qT = setTimeout(search, 300); };
 $('#q').onkeydown = e => { if (e.key === 'Enter') { const b = $('#hits button'); if (b) b.click(); } };
 async function search() {
   const q = $('#q').value.trim(), box = $('#hits'); if (q.length < 2) { box.hidden = true; return; }
-  const ql = q.toLowerCase(), local = CITIES.filter(c => c.name.toLowerCase().includes(ql)).slice(0, 4);
+  const local = CITIES.filter(c => c.name.toLowerCase().includes(q.toLowerCase())).slice(0, 4);
   let geo = [];
-  if (q.length > 3) try {
-    geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&bounded=1&viewbox=-118.95,34.83,-117.64,33.70&q=${encodeURIComponent(q)}`).then(r => r.json());
-  } catch (e) {}
+  if (q.length > 3) try { geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&bounded=1&viewbox=-118.95,34.83,-117.64,33.70&q=${encodeURIComponent(q)}`).then(r => r.json()); } catch (e) {}
   box.innerHTML = local.map((c, i) => `<button data-c="${i}">${esc(c.name)} <small>city</small></button>`).join('') +
     geo.map((g, i) => `<button data-g="${i}">${esc(g.display_name.split(',').slice(0, 3).join(','))}</button>`).join('') || '<button disabled>No match</button>';
   box.hidden = false;
-  box.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { map.fitBounds(local[+b.dataset.c].b, {padding: 40}); box.hidden = true; });
-  box.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { const g = geo[+b.dataset.g]; map.flyTo({center: [+g.lon, +g.lat], zoom: 17.5}); box.hidden = true; });
+  box.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { map.fitBounds(local[+b.dataset.c].b, {padding: 40}); box.hidden = true; if (narrow()) fold(true); });
+  box.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { const g = geo[+b.dataset.g]; map.flyTo({center: [+g.lon, +g.lat], zoom: 18}); box.hidden = true; if (narrow()) fold(true); });
 }
 document.addEventListener('click', e => { if (!e.target.closest('.search')) $('#hits').hidden = true; });
 
-/* sign card */
+/* clicks */
 $('#close').onclick = () => { $('#card').hidden = true; if (map.getSource('sel')) map.getSource('sel').setData({type: 'FeatureCollection', features: []}); };
 map.on('click', e => {
-  const L = SIGN_LAYERS.filter(id => map.getLayer(id) && map.getLayoutProperty(id, 'visibility') !== 'none');
-  const hit = map.queryRenderedFeatures([[e.point.x - 8, e.point.y - 8], [e.point.x + 8, e.point.y + 8]], {layers: L});
-  const order = ['fp', 'county', 'mly'];
-  const f = hit.sort((a, b) => order.indexOf(a.layer.id.split('-')[0]) - order.indexOf(b.layer.id.split('-')[0]))[0];
-  if (f) return openCard(f.layer.id.split('-')[0], f);
-  const t = map.getLayer('tiles-fill') && map.getLayoutProperty('tiles-fill', 'visibility') !== 'none' && map.getZoom() < 14 && map.queryRenderedFeatures(e.point, {layers: ['tiles-fill']})[0];
+  const box = [[e.point.x - 10, e.point.y - 10], [e.point.x + 10, e.point.y + 10]];
+  const g = map.getLayer('signs-face') && map.queryRenderedFeatures(box, {layers: ['signs-face', 'signs-halo']})[0];
+  if (g) return openCard(RAW.get(g.properties.gid));
+  const d = ['fp-dot', 'county-dot', 'mly-dot'].filter(id => map.getLayer(id) && map.getLayoutProperty(id, 'visibility') !== 'none');
+  if (map.getZoom() < ICON_Z && d.length && map.queryRenderedFeatures(box, {layers: d}).length) return map.flyTo({center: e.lngLat, zoom: 17.5});
+  const t = map.getLayer('tiles-fill') && map.getLayoutProperty('tiles-fill', 'visibility') !== 'none' && map.getZoom() < 15 && map.queryRenderedFeatures(e.point, {layers: ['tiles-fill']})[0];
   if (t) { const p = t.properties;
     new maplibregl.Popup({maxWidth: '240px'}).setLngLat(e.lngLat).setHTML(`<b>${esc(p.city)}</b> · P${p.p}<br><small>Build order #${p.rank.toLocaleString()} of 8,717 · ${p.art} km arterials · ${(p.jobs + p.res).toLocaleString()} jobs and residents</small>`).addTo(map); }
 });
-SIGN_LAYERS.forEach(id => { map.on('mouseenter', id, () => map.getCanvas().style.cursor = 'pointer'); map.on('mouseleave', id, () => map.getCanvas().style.cursor = ''); });
+['signs-face', 'signs-halo'].forEach(id => { map.on('mouseenter', id, () => map.getCanvas().style.cursor = 'pointer'); map.on('mouseleave', id, () => map.getCanvas().style.cursor = ''); });
 
-function openCard(src, f) {
-  const p = f.properties, [lon, lat] = f.geometry.coordinates;
-  let code = '', val = '', badges = [], facts = {}, photo = '';
-  if (src === 'fp') {
-    code = String(p.code || '').replace(/\s*\(\d+\)$/, ''); val = p.val || (String(p.code).match(/\((\d+)\)$/) || [])[1] || '';
-    badges = [`<span class="badge" style="--c:${SRC.fp.c}">${SRC.fp.t}</span>`, p.status === 'review' ? '<span class="badge warn">CHECK IN FIELD</span>' : '<span class="badge lt">HIGH CONFIDENCE</span>'];
-    facts = {Location: p.loc, Photo: p.seen, Confidence: p.conf ? Math.round(p.conf * 100) + '%' : '', Area: p.area};
-    photo = p.crop ? `<div class="photo"><img src="${esc(p.crop)}" alt="Sign photo"><div class="cap">Photo ${esc(p.seen)} · read by our sign model</div></div>` : '';
-  } else if (src === 'mly') {
-    const m = CMAP[p.value] || {}; code = String(m.code || '').split('/')[0]; val = m.val || '';
-    const t = TRUST[code.split('(')[0].trim()] || {trust: 'untested'};
-    const TT = {likely: ['badge lt', 'CODE USUALLY RIGHT'], mixed: ['badge warn', 'CODE SOMETIMES WRONG'], low: ['badge warn', 'CODE OFTEN WRONG'], untested: ['badge warn', 'CODE NOT YET TESTED']};
-    badges = [`<span class="badge" style="--c:${SRC.mly.c}">${SRC.mly.t}</span>`, `<span class="${TT[t.trust][0]}">${TT[t.trust][1]}</span>`];
-    facts = {'First seen': day(p.first_seen_at), 'Last seen': day(p.last_seen_at), Agreement: t.found != null ? `Matched ${Math.round(t.found * 100)}% of ${t.ours} scanned ${code} signs` : '', Detected: String(p.value).replace(/--/g, ' · ').replace(/-/g, ' ')};
-    photo = `<div class="photo" id="ph"><div class="msg">Loading photo…</div></div>`;
-  } else {
-    code = p.code || ''; badges = [`<span class="badge" style="--c:${SRC.county.c}">${SRC.county.t}</span>`, p.status ? `<span class="badge lt">${esc(String(p.status).toUpperCase())}</span>` : ''];
-    facts = {Description: p.desc, Location: p.loc, Facing: p.dir, Date: p.date, Source: p.src};
-    photo = `<div class="photo" id="ph"><div class="msg">Looking for the nearest street photo…</div></div>`;
-  }
-  const k = famKey(code), info = IDX[resolve(k) || k] || IDX[k] || {};
-  const art = NUMERIC.includes(k) && /^\d+$/.test(String(val)) ? `<img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(speedSVG(k, val))}" alt="${esc(code)} ${esc(val)}">`
-    : info.svg ? `<img src="${SSS}${info.svg}" alt="${esc(code)}">` : `<b>${esc(code)}</b>`;
+/* sign card: the sign, its photo, and every source that has it */
+function codeOf(r) {
+  if (r.src === 'fp') return {code: String(r.p.code || '').replace(/\s*\(\d+\)$/, ''), val: r.p.val || (String(r.p.code).match(/\((\d+)\)$/) || [])[1] || ''};
+  if (r.src === 'mly') { const m = CMAP[r.p.value] || {}; return {code: String(m.code || '').split('/')[0], val: m.val || ''}; }
+  return {code: r.p.code || '', val: r.face.includes('@') ? r.face.split('@')[1].replace('?', '') : ''};
+}
+function srcRow(r) {
+  const {code, val} = codeOf(r), cv = esc(code) + (val ? ` (${esc(val)})` : '');
+  if (r.src === 'fp') return [cv, `${r.p.status === 'review' ? 'check in field' : 'high confidence'}${r.p.conf ? ', ' + Math.round(r.p.conf * 100) + '%' : ''} · photo ${esc(r.p.seen)}`];
+  if (r.src === 'mly') { const t = trustOf(code); const TT = {likely: 'code usually right', mixed: 'code sometimes wrong', low: 'code often wrong', untested: 'code not yet tested'};
+    return [cv, `${TT[t.trust]} · seen ${day(r.p.first_seen_at)}${r.p.last_seen_at && day(r.p.last_seen_at) !== day(r.p.first_seen_at) ? ' to ' + day(r.p.last_seen_at) : ''}`]; }
+  return [cv, [r.p.desc, r.p.dir && 'faces ' + r.p.dir, r.p.status && String(r.p.status).toLowerCase(), r.p.date].filter(Boolean).map(esc).join(' · ')];
+}
+function openCard(g) {
+  if (!g) return; const top = g.recs[0], [lon, lat] = top.ll;
+  const best = g.recs.find(r => r.face.includes('@') && !r.face.endsWith('@?')) || top;
+  const {code, val} = codeOf(best), k = famKey(code), info = IDX[resolve(k) || k] || IDX[k] || {};
+  const art = NUMERIC.includes(k) ? `<img src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(speedSVG(k, val || '?'))}" alt="">`
+    : info.svg ? `<img src="${SSS}${info.svg}" alt="">` : `<b>${esc(code)}</b>`;
+  const srcs = [...new Set(g.recs.map(r => r.src))];
+  const agree = srcs.length > 1 ? `<span class="badge lt">${srcs.length} SOURCES AGREE</span>` : '';
+  const fpRec = g.recs.find(r => r.src === 'fp' && r.p.crop), mRec = g.recs.find(r => r.src === 'mly');
+  const photo = fpRec ? `<div class="photo"><img src="${esc(fpRec.p.crop)}" alt="Sign photo"><div class="cap">Photo ${esc(fpRec.p.seen)} · read by our sign model</div></div>`
+    : `<div class="photo" id="ph"><div class="msg">Loading photo…</div></div>`;
   $('#card-body').innerHTML = `<div class="sc-head"><div class="sc-art">${art}</div><div><div class="sc-code">${esc(code || 'No code')}${val ? ` <span style="font-weight:500">(${esc(val)})</span>` : ''}</div>
-    <div class="sc-name">${esc(info.name || '')}</div></div></div><div class="badges">${badges.join('')}</div>${photo}
-    <table class="facts">${Object.entries(facts).filter(([, v]) => v).map(([k_, v]) => `<tr><td>${k_}</td><td>${esc(v)}</td></tr>`).join('')}</table>
+    <div class="sc-name">${esc(info.name || (top.src === 'county' ? top.p.desc : '') || '')}</div></div></div>
+    <div class="badges">${srcs.map(s => `<span class="badge" style="--c:${SRC[s].c}">${SRC[s].t.toUpperCase()}</span>`).join('')}${agree}</div>${photo}
+    <table class="facts">${g.recs.map(r => { const [a, b] = srcRow(r); return `<tr><td><b style="color:${SRC[r.src].c}">${SRC[r.src].t}</b><br>${a}</td><td>${b}</td></tr>`; }).join('')}</table>
     <div class="links">${info.slug ? `<a href="${SSS}/signs/${info.slug}/" target="_blank" rel="noopener">Standard</a>` : ''}<a href="${sv(lat, lon)}" target="_blank" rel="noopener">Street View</a><a href="${mlyAt(lat, lon)}" target="_blank" rel="noopener">Mapillary</a></div>`;
   $('#card').hidden = false; if (narrow()) fold(true);
   if (!map.getSource('sel')) { map.addSource('sel', {type: 'geojson', data: {type: 'FeatureCollection', features: []}});
-    map.addLayer({id: 'sel', type: 'circle', source: 'sel', paint: {'circle-radius': 14, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-color': '#FF6622', 'circle-stroke-width': 3}}); }
+    map.addLayer({id: 'sel', type: 'circle', source: 'sel', paint: {'circle-radius': 26, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-color': '#FF6622', 'circle-stroke-width': 3}}); }
   map.getSource('sel').setData({type: 'Feature', geometry: {type: 'Point', coordinates: [lon, lat]}, properties: {}});
-  if (src === 'mly') mlyPhoto(p.id); if (src === 'county') nearPhoto(lon, lat);
+  if (!fpRec) mRec ? mlyPhoto(mRec.p.id) : nearPhoto(lon, lat);
 }
-
-/* Mapillary: newest photo that saw this sign, cropped to the sign with CSS */
 async function mlyPhoto(id) {
   const box = $('#ph'); if (!box) return;
   try {
-    const d = (await graph(`${id}/detections`, 'fields=image,geometry')).data || [];
-    if (!d.length) throw 0;
+    const d = (await graph(`${id}/detections`, 'fields=image,geometry')).data || []; if (!d.length) throw 0;
     const ims = await Promise.all(d.slice(0, 6).map(x => graph(x.image.id, 'fields=thumb_1024_url,captured_at,width,height').then(i => ({i, g: x.geometry}))));
     const {i, g} = ims.filter(x => x.i.thumb_1024_url).sort((a, b) => b.i.captured_at - a.i.captured_at)[0];
-    const bb = mvtBox(g); const iw = 1024, ih = Math.round(1024 * i.height / i.width);
-    const W = box.clientWidth || 308, H = 170, pad = 2.2;
+    const bb = mvtBox(g), iw = 1024, ih = Math.round(1024 * i.height / i.width), W = box.clientWidth || 308, H = 170, pad = 2.2;
     const bw = Math.max(bb[2] - bb[0], 0.01) * iw * pad, bh = Math.max(bb[3] - bb[1], 0.01) * ih * pad;
     const s = Math.min(W / bw, H / bh, 3), cx = (bb[0] + bb[2]) / 2 * iw * s, cy = (bb[1] + bb[3]) / 2 * ih * s;
     box.innerHTML = `<a href="${esc(i.thumb_1024_url)}" target="_blank" rel="noopener"><div class="crop" style="background-image:url('${i.thumb_1024_url}');background-size:${iw * s}px ${ih * s}px;background-position:${W / 2 - cx}px ${H / 2 - cy}px"></div></a>
       <div class="cap">Photo ${day(i.captured_at)} · ${d.length} photo${d.length > 1 ? 's' : ''} saw this sign · tap for the full photo</div>`;
   } catch (e) { box.innerHTML = '<div class="msg">No photo available for this detection</div>'; }
 }
-/* County records carry no photo: show the nearest street photo */
 async function nearPhoto(lon, lat) {
   const box = $('#ph'); if (!box) return; const r = 0.00025;
   try {
     const d = (await graph('images', `fields=thumb_1024_url,captured_at&limit=10&bbox=${lon - r},${lat - r},${lon + r},${lat + r}`)).data || [];
     const i = d.sort((a, b) => b.captured_at - a.captured_at)[0]; if (!i) throw 0;
-    box.innerHTML = `<a href="${esc(i.thumb_1024_url)}" target="_blank" rel="noopener"><img src="${esc(i.thumb_1024_url)}" alt="Nearest street photo"></a><div class="cap">Nearest street photo, ${day(i.captured_at)} (not matched to this record)</div>`;
+    box.innerHTML = `<a href="${esc(i.thumb_1024_url)}" target="_blank" rel="noopener"><img src="${esc(i.thumb_1024_url)}" alt="Nearest street photo"></a><div class="cap">Nearest street photo, ${day(i.captured_at)} (not matched to this sign)</div>`;
   } catch (e) { box.innerHTML = '<div class="msg">No street photo within 25 m</div>'; }
 }
-/* bounding box (0-1) of a Mapillary detection geometry: base64 vector tile with one feature */
 function mvtBox(b64) {
-  const u = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); let ext = 4096, pts = [];
+  const u = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); let ext = 4096; const pts = [];
   const rd = (b, o) => { let v = 0, s = 0, c; do { c = b[o.i++]; v += (c & 0x7f) * 2 ** s; s += 7; } while (c & 0x80); return v; };
   const walk = (b, fn) => { const o = {i: 0}; while (o.i < b.length) { const t = rd(b, o), f = t >>> 3, w = t & 7;
     if (w === 2) { const n = rd(b, o); fn(f, b.subarray(o.i, o.i + n)); o.i += n; } else if (w === 0) fn(f, rd(b, o)); else if (w === 5) o.i += 4; else if (w === 1) o.i += 8; } };
