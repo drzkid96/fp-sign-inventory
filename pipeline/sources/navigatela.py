@@ -5,7 +5,7 @@ Each LADOT Traffic Data location (lahub LADOT MapServer layer 21) has a report p
   automatic_counts/ 24-hour directional volume counts
   survey_data/      24-hour speed and volume studies, one lane and direction per file (85th percentile)
 The count date is in the file name (YYMMDD). Files dated before the limit are not downloaded. Parsed files are
-cached in data/cache/navigatela.json so a nightly run only reads new files; report pages are re-read in sevenths.
+cached in data/cache/navigatela.json so a nightly run only reads new files; report pages are re-read over a 30-day cycle; a first full read takes about a week of nightly runs.
 """
 import os, re, json, io, datetime, concurrent.futures as cf
 import requests
@@ -104,7 +104,8 @@ def parse_speed(t):
 
 def read_pdf(url):
     import pdfplumber
-    r = requests.get(url, headers=H, timeout=90)
+    try: r = requests.get(url, headers=H, timeout=40)
+    except Exception as e: return {'error': type(e).__name__, 'v': 0}
     if r.status_code != 200 or not r.content.startswith(b'%PDF'): return {'error': f'http {r.status_code}'}
     with pdfplumber.open(io.BytesIO(r.content)) as pdf: t = '\n'.join((p.extract_text() or '') for p in pdf.pages[:6])
     kind = next((v for k, v in KIND.items() if f'/{k}/' in url), None)
@@ -115,26 +116,33 @@ def collect(points, since):
     """points: [(trafficid, intersection, lon, lat)] -> {'files': {url: rec}, 'stats': {...}}"""
     os.makedirs(os.path.dirname(CACHE), exist_ok=True)
     cache = json.load(open(CACHE)) if os.path.exists(CACHE) else {'pages': {}, 'files': {}}
-    today = datetime.date.today(); slice_ = today.toordinal() % 7
+    today = datetime.date.today(); slice_ = today.toordinal() % 30
     def page(tid):
         try:
-            t = requests.get(PAGE.format(tid), headers=H, timeout=60).text
+            t = requests.get(PAGE.format(tid), headers=H, timeout=25).text
             return tid, sorted(set(re.findall(r'href="([^"]+\.pdf)"', t, re.I)))
         except Exception: return tid, None
     fresh = [p[0] for p in points if str(p[0]) not in cache['pages']][:int(os.environ.get('NLA_PAGES', 4000))]   # first build spreads over a few nights
-    todo = fresh + [p[0] for p in points if str(p[0]) in cache['pages'] and p[0] % 7 == slice_]
-    with cf.ThreadPoolExecutor(8) as ex:
-        for tid, links in ex.map(page, todo):
-            if links is not None: cache['pages'][str(tid)] = links
+    todo = fresh + [p[0] for p in points if str(p[0]) in cache['pages'] and p[0] % 30 == slice_]
+    import time
+    t_end = time.time() + 60 * float(os.environ.get('NLA_PAGE_MIN', 35))      # time budget; the rest waits for the next night
+    def timed(fn, items, limit):
+        ex = cf.ThreadPoolExecutor(12); futs = [ex.submit(fn, x) for x in items]; out = []
+        try:
+            for f in cf.as_completed(futs, timeout=max(1, limit - time.time())): out.append(f.result())
+        except cf.TimeoutError: pass
+        for f in futs: f.cancel()
+        ex.shutdown(wait=False, cancel_futures=True); return out
+    for tid, links in timed(page, todo, t_end):
+        if links is not None: cache['pages'][str(tid)] = links
     want = {}
     for p in points:
         for u in cache['pages'].get(str(p[0]), []):
             d = file_date(u)
             if d and d >= since and any(f'/{k}/' in u for k in KIND) and not re.search(r'PED|BIKE', u.rsplit('/', 1)[-1], re.I): want[u] = (p, d)
     new = [u for u in want if (cache['files'].get(u) or {}).get('v') != PARSER_V][:int(os.environ.get('NLA_FILES', 1500))]
-    with cf.ThreadPoolExecutor(8) as ex:
-        for u, rec in zip(new, ex.map(read_pdf, new)):
-            cache['files'][u] = rec
+    f_end = time.time() + 60 * float(os.environ.get('NLA_FILE_MIN', 30))
+    for u, rec in timed(lambda u: (u, read_pdf(u)), new, f_end): cache['files'][u] = rec
     json.dump(cache, open(CACHE, 'w'), separators=(',', ':'))
     links = [u for v in cache['pages'].values() for u in v]
     stats = {'locations': len(points), 'pages_read': len(todo), 'pages_not_yet_read': sum(1 for p in points if str(p[0]) not in cache['pages']), 'pdf_links': len(links),

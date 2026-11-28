@@ -216,9 +216,9 @@ MIRRORS = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.
 
 def osm_control(L, feats, info):
     d = None
-    for m in MIRRORS * 2:
+    for m in MIRRORS:
         try:
-            r = requests.post(m, data={'data': OSM_Q}, headers=H, timeout=400)
+            r = requests.post(m, data={'data': OSM_Q}, headers=H, timeout=320)
             if r.status_code == 200: d = r.json(); break
         except Exception: pass
     if d is None: raise RuntimeError('Overpass did not answer')
