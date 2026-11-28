@@ -16,6 +16,7 @@ One map platform for LA County street data: signs (the inventory), plus data lay
 - Speeds: 85th percentile only. No posted-limit layers.
 - Never use Google Street View imagery as a data source (link-out only).
 - Every record keeps its source, source id and date. Nothing is invented: unmatched records are listed in the layer summary, not placed by guess.
+- Every record keeps a link to its source report where one exists (count PDFs).
 - Brand: F&P (Albert Sans, F&P colors). Table cells vertically centered.
 
 ## ADDING A LAYER

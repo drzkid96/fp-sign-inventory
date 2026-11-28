@@ -53,6 +53,14 @@ code{background:var(--band);padding:1px 5px;border-radius:4px;font-size:12px}
     <table><thead><tr><th>Report</th><th>Segments read</th><th>Placed on the map</th><th>Status</th></tr></thead><tbody id="reports"></tbody></table>
   </section>
   <section>
+    <h2>CITY OF LA COUNT REPORTS</h2>
+    <p id="nla">Not built yet.</p>
+  </section>
+  <section>
+    <h2>TRANSIT FEEDS</h2>
+    <table><thead><tr><th>Operator</th><th>Routes</th><th>Stops</th><th>Schedule runs to</th><th>Status</th></tr></thead><tbody id="feeds"></tbody></table>
+  </section>
+  <section>
     <h2>LEFT OUT</h2>
     <table><thead><tr><th>Data</th><th>Why</th></tr></thead><tbody id="out"></tbody></table>
   </section>
@@ -74,6 +82,10 @@ Promise.all([fetch('data/layers.json').then(r => r.json()), fetch('data/layers/i
   const reps = (I.speed_surveys || {}).reports || [];
   document.getElementById('reports').innerHTML = reps.length ? reps.map(r => `<tr><td>${r.url ? `<a href="${esc(r.url)}">${esc(r.city)} ${r.year}</a>` : esc(r.city + ' ' + r.year)}<br><small>${esc(r.title)}</small></td>
     <td class="n">${r.rows ?? '-'}</td><td class="n">${r.located ?? '-'}</td><td>${r.error ? `<span class="err">${esc(r.error)}</span>` : 'Read'}</td></tr>`).join('') : '<tr><td colspan="4"><small>Not built yet</small></td></tr>';
+  const n = (I.lacity_adt || {}).navigatela;
+  if (n) document.getElementById('nla').textContent = `LADOT publishes count reports for ${n.locations.toLocaleString()} locations on NavigateLA (${n.pdf_links.toLocaleString()} reports; ${n.undated_links.toLocaleString()} have no date in the file name). ${n.files_since_limit.toLocaleString()} are dated 2021 or later and are read into the 24-hour count, turning movement count and speed study layers; ${n.not_read.toLocaleString()} of those are in a format the reader doesn't handle yet. Each record links to its report.`;
+  const fd = (I.transit_routes || {}).feeds || [], d8 = x => x && x.length === 8 ? `${x.slice(0, 4)}-${x.slice(4, 6)}-${x.slice(6)}` : '';
+  document.getElementById('feeds').innerHTML = fd.length ? fd.map(f => `<tr><td>${esc(f.operator)}</td><td class="n">${f.routes ?? '-'}</td><td class="n">${f.stops ?? '-'}</td><td>${esc(d8(f.service_to))}</td><td>${f.error ? `<span class="err">${esc(f.error)}</span>` : esc(f.note || 'Read')}</td></tr>`).join('') : '<tr><td colspan="5"><small>Not built yet</small></td></tr>';
   document.getElementById('out').innerHTML = R.left_out.map(o => `<tr><td>${esc(o.name)}</td><td>${esc(o.why)}</td></tr>`).join('');
   if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
 });

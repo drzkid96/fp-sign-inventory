@@ -103,6 +103,10 @@ def build(L):
         if ds.get('layer_max'):
             for f in feats: f['properties']['date'] = as_of
     else: as_of = None
+    live_note = None
+    if L['kind'] == 'inventory' and not as_of and ds.get('live'):
+        as_of = datetime.date.today().isoformat(); live_note = 'agency does not publish an update date; date of download'
+        for f in feats: f['properties']['date'] = as_of
     # checks
     drop = {'before_limit': 0, 'undated': 0, 'no_location': 0, 'outside_county': 0}; keep = []
     for n, f in enumerate(feats):
@@ -123,6 +127,7 @@ def build(L):
                'built': datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%MZ'), 'source': L['source'], 'source_fields': info.get('fields'), 'seconds': round(time.time() - t0)}
     if L['kind'] == 'inventory':
         summary['as_of'] = as_of
+        if live_note: summary['as_of_note'] = live_note
         if not as_of or int(as_of[:4]) < SINCE:
             summary['skipped'] = f'agency last update {as_of or "unknown"} is before {SINCE}'; keep = []
     years = {}

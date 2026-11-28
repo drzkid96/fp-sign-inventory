@@ -163,3 +163,165 @@ def speed_surveys(L, feats, info):
     return out
 
 def speed_surveys_notes(): return NOTES.get('speed_surveys', {})
+
+# ---------- LADOT counts on NavigateLA (TMC, 24-hour volumes, speed studies) ----------
+_nla = None
+WEEKEND = ('sat', 'sun')
+
+def _navigatela(info_feats):
+    global _nla
+    if _nla is None:
+        from sources import navigatela
+        from layers import arcgis, REG
+        feats, _ = arcgis({'url': 'https://maps.lacity.org/lahub/rest/services/LADOT/MapServer/21', 'where': '1=1'})
+        pts = []
+        for f in feats:
+            p = f['properties']; g = f.get('geometry') or {}
+            if p.get('TrafficID') and g.get('coordinates'): pts.append((int(p['TrafficID']), p.get('intersection'), *g['coordinates'][:2]))
+        if os.environ.get('NLA_LIMIT'): pts = pts[:int(os.environ['NLA_LIMIT'])]       # local tests only
+        _nla = navigatela.collect(pts, REG['since'])
+        NOTES['navigatela'] = _nla[1]
+    return _nla
+
+def _nla_layer(kind, build):
+    files, stats = _navigatela(None); out = []
+    for url, ((tid, inter, x, y), d, rec) in files.items():
+        if f'/{ {"tmc": "manual_counts", "adt": "automatic_counts", "speed": "survey_data"}[kind]}/' not in url or not rec or 'error' in rec: continue
+        p = build(rec); p.update({'intersection': inter, 'pdf': url, 'date': d, 'src_id': url.rsplit('/', 1)[-1]})
+        day = str(rec.get('day') or datetime.date.fromisoformat(d).strftime('%a')).lower()
+        p['daytype'] = 'Weekend' if day[:3] in WEEKEND else 'Weekday'
+        out.append({'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [x, y]}, 'properties': p})
+    return out
+
+def _peaks(r, fmt=lambda h: h):
+    c = lambda v: f'{v:,}' if isinstance(v, int) else '-'
+    out = {}
+    for k in ('am', 'pm'):
+        if r.get(k + '_peak_hour'): out[k + '_peak'] = f"{fmt(r[k + '_peak_hour'])}, {c(r.get(k + '_peak_vol'))} vehicles"
+    return out
+def _hr(h):                                    # '15-16' or '3-4' (PM) -> '3-4 PM'
+    a, b = (int(x) for x in h.split('-')); pm = a >= 12 or 1 <= a <= 5
+    a, b = (a - 12 if a > 12 else a), (b - 12 if b > 12 else b)
+    return f'{a}-{b} {"PM" if pm else "AM"}'
+def lacity_adt(L, feats, info):
+    return _nla_layer('adt', lambda r: dict(r, dirs=' / '.join(f'{v:,}' if isinstance(v, int) else '-' for v in (r.get('vol_nb_wb'), r.get('vol_sb_eb'))), **_peaks(r)))
+def lacity_tmc(L, feats, info): return _nla_layer('tmc', lambda r: dict(r, **_peaks(r, _hr)))
+def lacity_speeds(L, feats, info): return _nla_layer('speed', lambda r: dict(r))
+def lacity_adt_notes(): return {'navigatela': NOTES.get('navigatela')}
+lacity_tmc_notes = lacity_speeds_notes = lacity_adt_notes
+
+# ---------- intersection control from OpenStreetMap ----------
+OSM_Q = '[out:json][timeout:300];(node["highway"~"^(traffic_signals|stop|give_way|mini_roundabout)$"](33.70,-118.95,34.82,-117.65);node["crossing"="traffic_signals"](33.70,-118.95,34.82,-117.65););out body;'
+MIRRORS = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']
+
+def osm_control(L, feats, info):
+    d = None
+    for m in MIRRORS * 2:
+        try:
+            r = requests.post(m, data={'data': OSM_Q}, headers=H, timeout=400)
+            if r.status_code == 200: d = r.json(); break
+        except Exception: pass
+    if d is None: raise RuntimeError('Overpass did not answer')
+    stamp = (d.get('osm3s') or {}).get('timestamp_osm_base', '')[:10]; out = []
+    for e in d.get('elements', []):
+        t = e.get('tags', {}); h = t.get('highway')
+        if h == 'traffic_signals' or t.get('crossing') == 'traffic_signals':
+            kind = 'Signal' if h == 'traffic_signals' and t.get('traffic_signals') not in ('crossing', 'pedestrian_crossing') and t.get('crossing') != 'traffic_signals' else 'Pedestrian signal'
+            if t.get('traffic_signals') in ('emergency', 'blinker'): kind = 'Flashing or emergency signal'
+        elif h == 'stop': kind = 'All-way stop' if t.get('stop') == 'all' else 'Stop'
+        elif h == 'give_way': kind = 'Yield'
+        elif h == 'mini_roundabout': kind = 'Mini roundabout'
+        else: continue
+        out.append({'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [e['lon'], e['lat']]},
+                    'properties': {'control': kind, 'osm_id': e['id'], 'direction': t.get('direction'), 'date': stamp, 'src_id': e['id']}})
+    return out
+
+# ---------- transit (GTFS feeds of every operator in the county) ----------
+_gtfs = None
+CATALOG = 'https://share.mobilitydata.org/catalogs-csv'
+BOX = (-118.95, 33.70, -117.65, 34.82)
+MODE = {0: 'Light rail', 1: 'Subway', 2: 'Commuter rail', 3: 'Bus', 4: 'Ferry', 5: 'Cable car', 11: 'Trolleybus', 700: 'Bus', 702: 'Express bus', 900: 'Light rail'}
+
+def _transit():
+    global _gtfs
+    if _gtfs is not None: return _gtfs
+    import csv, zipfile, collections
+    rows = list(csv.DictReader(io.StringIO(requests.get(CATALOG, headers=H, timeout=120).text)))
+    def inbox(x):
+        try: return float(x['location.bounding_box.minimum_longitude']) < BOX[2] and float(x['location.bounding_box.maximum_longitude']) > BOX[0] and \
+                    float(x['location.bounding_box.minimum_latitude']) < BOX[3] and float(x['location.bounding_box.maximum_latitude']) > BOX[1]
+        except Exception: return False
+    feeds = [x for x in rows if x.get('data_type') == 'gtfs' and x.get('location.subdivision_name') == 'California' and x.get('status', '') in ('', 'active')
+             and not x.get('redirect.id') and x.get('urls.direct_download') and inbox(x) and x.get('urls.authentication_type', '') in ('', '0')]
+    routes, stops, status = [], [], []
+    inb = lambda lon, lat: BOX[0] < lon < BOX[2] and BOX[1] < lat < BOX[3]
+    for fd in feeds:
+        name = fd['provider']; url = fd.get('urls.latest') or fd['urls.direct_download']; st = {'operator': name, 'url': fd['urls.direct_download']}
+        try:
+            r = requests.get(url, headers=H, timeout=180)
+            if r.status_code != 200 and url != fd['urls.direct_download']: r = requests.get(fd['urls.direct_download'], headers=H, timeout=180)
+            z = zipfile.ZipFile(io.BytesIO(r.content)); names = {n.rsplit('/', 1)[-1]: n for n in z.namelist()}
+            rd = lambda f: list(csv.DictReader(io.TextIOWrapper(z.open(names[f]), 'utf-8-sig'))) if f in names else []
+            ag = {a.get('agency_id', ''): a.get('agency_name') for a in rd('agency.txt')}
+            rt = {x['route_id']: x for x in rd('routes.txt')}
+            cal = [c.get('end_date', '') for c in rd('calendar.txt')] + [c.get('date', '') for c in rd('calendar_dates.txt')]
+            end = max([c for c in cal if c] or [''])
+            shp = collections.defaultdict(list)
+            for s in rd('shapes.txt'): shp[s['shape_id']].append((int(float(s['shape_pt_sequence'])), float(s['shape_pt_lon']), float(s['shape_pt_lat'])))
+            best = {}
+            for t in rd('trips.txt'):
+                sid = t.get('shape_id'); k = (t['route_id'], t.get('direction_id', ''))
+                if sid in shp and (k not in best or len(shp[sid]) > len(shp[best[k]])): best[k] = sid
+            if not best:                                  # feeds without shapes: draw each route through its stops in order
+                sxy = {x['stop_id']: (float(x['stop_lon']), float(x['stop_lat'])) for x in rd('stops.txt') if x.get('stop_lon')}
+                trip = {}
+                for t in rd('trips.txt'): trip.setdefault((t['route_id'], t.get('direction_id', '')), t['trip_id'])
+                want = set(trip.values()); seq = collections.defaultdict(list)
+                for x in rd('stop_times.txt'):
+                    if x['trip_id'] in want: seq[x['trip_id']].append((int(x['stop_sequence']), x['stop_id']))
+                for k, tid in trip.items():
+                    pts = [sxy[sid] for _, sid in sorted(seq[tid]) if sid in sxy]
+                    if len(pts) > 1: shp['_' + tid] = [(i, x, y) for i, (x, y) in enumerate(pts)]; best[k] = '_' + tid
+                st['note'] = 'no route shapes in feed; drawn stop to stop'
+            n = 0
+            for (rid, dr), sid in best.items():
+                pts = [(x, y) for _, x, y in sorted(shp[sid])]
+                if not any(inb(x, y) for x, y in pts[::10] + pts[-1:]): continue
+                rr = rt.get(rid, {}); col = rr.get('route_color') or ''
+                routes.append({'type': 'Feature', 'geometry': {'type': 'LineString', 'coordinates': [[round(x, 6), round(y, 6)] for x, y in pts]}, 'properties': {
+                    'route': rr.get('route_short_name') or rr.get('route_long_name') or rid, 'name': rr.get('route_long_name') or '', 'operator': ag.get(rr.get('agency_id', ''), name) or name,
+                    'mode': MODE.get(int(rr.get('route_type') or 3), 'Bus'), 'color': '#' + col if re.fullmatch(r'[0-9A-Fa-f]{6}', col) else None,
+                    'service_to': f'{end[:4]}-{end[4:6]}-{end[6:8]}' if len(end) == 8 else None, 'src_id': f'{name}:{rid}:{dr}'}}); n += 1
+            m = 0
+            for s in rd('stops.txt'):
+                try: x, y = float(s['stop_lon']), float(s['stop_lat'])
+                except Exception: continue
+                if s.get('location_type', '0') not in ('', '0') or not inb(x, y): continue
+                stops.append({'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [round(x, 6), round(y, 6)]},
+                              'properties': {'stop': s.get('stop_name'), 'code': s.get('stop_code'), 'operator': name, 'src_id': f"{name}:{s['stop_id']}"}}); m += 1
+            st.update(routes=n, stops=m, service_to=end)
+        except Exception as e: st['error'] = f'{type(e).__name__}: {e}'[:160]
+        status.append(st)
+    today = datetime.date.today().isoformat()
+    for f in routes + stops: f['properties']['date'] = today
+    _gtfs = (routes, stops); NOTES['transit'] = {'feeds': status}
+    return _gtfs
+
+def transit_routes(L, feats, info): return _transit()[0]
+def transit_stops(L, feats, info): return _transit()[1]
+def transit_routes_notes(): return NOTES.get('transit', {})
+transit_stops_notes = transit_routes_notes
+
+# ---------- LADOT stop and yield signs (intersection control) ----------
+def ladot_stop_yield(L, feats, info):
+    for f in feats:
+        p = f['properties']; t = str(p.pop('tooltip', '') or '').replace('\\n', '\n')
+        g = lambda k: (re.search(k + r':\s*(.+)', t) or [None, None])[1]
+        p['control'] = {1: 'Stop', 2: 'Yield'}.get(num(p.get('sign_type')), 'Stop or yield')
+        p['faces'] = g('Faces Traffic Going'); p['street'] = g('Primary Street'); p['cross'] = g('Cross Street'); p['src_id'] = p.get('oid')
+    return feats
+
+def ladot_signals(L, feats, info):
+    for f in feats:
+        p = f['properties']; p['name'] = ' / '.join(x for x in (p.get('st1'), p.get('st2'), p.get('st3')) if x); p['src_id'] = p.get('sid')
+    return feats

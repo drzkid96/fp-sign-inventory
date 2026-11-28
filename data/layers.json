@@ -3,13 +3,18 @@
   "since": "2021-01-01",
   "rules": {
     "observed": "Counts, surveys and photos: every record dated 2021-01-01 or later; older or undated records are dropped.",
-    "inventory": "Current agency inventories and rules: kept when the agency's last update is 2021 or later; the update date shows on every record."
+    "inventory": "Current agency inventories and rules: kept when the agency's last update is 2021 or later; where the agency publishes no update date, the download date shows instead."
   },
   "groups": [
     {
       "id": "volumes",
       "title": "Traffic volumes",
       "color": "#00574A"
+    },
+    {
+      "id": "tmc",
+      "title": "Turning movement counts",
+      "color": "#00242E"
     },
     {
       "id": "speeds",
@@ -20,6 +25,16 @@
       "id": "active",
       "title": "Walk and bike counts",
       "color": "#1B795A"
+    },
+    {
+      "id": "control",
+      "title": "Intersection control",
+      "color": "#B0322C"
+    },
+    {
+      "id": "transit",
+      "title": "Transit",
+      "color": "#7A4FA0"
     },
     {
       "id": "parking",
@@ -244,6 +259,156 @@
       }
     },
     {
+      "id": "lacity_adt",
+      "group": "volumes",
+      "title": "City of LA 24-hour counts (LADOT)",
+      "kind": "observed",
+      "geom": "point",
+      "source": {
+        "name": "LADOT Traffic Data (NavigateLA count reports)",
+        "agency": "LADOT",
+        "url": "https://navigatela.lacity.org/navigatela/",
+        "license": "City of Los Angeles public records"
+      },
+      "hook": "lacity_adt",
+      "style": {
+        "metric": "adt",
+        "stops": [
+          [
+            0,
+            3
+          ],
+          [
+            10000,
+            5
+          ],
+          [
+            50000,
+            9
+          ]
+        ],
+        "label": "{adt_k}"
+      },
+      "card": {
+        "title": "{location}",
+        "sub": "{intersection}",
+        "fields": [
+          [
+            "24-hour volume, both directions",
+            "adt",
+            "num"
+          ],
+          [
+            "NB or WB / SB or EB",
+            "dirs",
+            "text"
+          ],
+          [
+            "Counted street",
+            "direction",
+            "text"
+          ],
+          [
+            "AM peak hour",
+            "am_peak",
+            "text"
+          ],
+          [
+            "PM peak hour",
+            "pm_peak",
+            "text"
+          ],
+          [
+            "Day",
+            "daytype",
+            "text"
+          ],
+          [
+            "Count date",
+            "date",
+            "text"
+          ]
+        ],
+        "pdf": "pdf",
+        "note": "One 24-hour machine count on the date shown; not seasonally adjusted."
+      }
+    },
+    {
+      "id": "lacity_tmc",
+      "group": "tmc",
+      "title": "City of LA turning movement counts (LADOT)",
+      "kind": "observed",
+      "geom": "point",
+      "source": {
+        "name": "LADOT Traffic Data (NavigateLA count reports)",
+        "agency": "LADOT",
+        "url": "https://navigatela.lacity.org/navigatela/",
+        "license": "City of Los Angeles public records"
+      },
+      "hook": "lacity_tmc",
+      "style": {
+        "metric": "total",
+        "stops": [
+          [
+            0,
+            4
+          ],
+          [
+            8000,
+            6
+          ],
+          [
+            25000,
+            10
+          ]
+        ],
+        "label": "{total_k}"
+      },
+      "card": {
+        "title": "{ns_street} and {ew_street}",
+        "sub": "Turning movement count, {hours}",
+        "tmc": true,
+        "fields": [
+          [
+            "Vehicles entering, all count hours",
+            "total",
+            "num"
+          ],
+          [
+            "AM peak hour",
+            "am_peak",
+            "text"
+          ],
+          [
+            "PM peak hour",
+            "pm_peak",
+            "text"
+          ],
+          [
+            "Pedestrian crossings",
+            "peds",
+            "num"
+          ],
+          [
+            "Bikes",
+            "bikes",
+            "num"
+          ],
+          [
+            "Day",
+            "daytype",
+            "text"
+          ],
+          [
+            "Count date",
+            "date",
+            "text"
+          ]
+        ],
+        "pdf": "pdf"
+      }
+    },
+    {
       "id": "speed_surveys",
       "group": "speeds",
       "title": "85th percentile speeds (E&TS reports)",
@@ -310,6 +475,76 @@
           ]
         ],
         "note": "Read from the report's summary table; page {page}. Location matched by street and limits ({how})."
+      }
+    },
+    {
+      "id": "lacity_speeds",
+      "group": "speeds",
+      "title": "City of LA speed studies (LADOT)",
+      "kind": "observed",
+      "geom": "point",
+      "source": {
+        "name": "LADOT Traffic Data (NavigateLA count reports)",
+        "agency": "LADOT",
+        "url": "https://navigatela.lacity.org/navigatela/",
+        "license": "City of Los Angeles public records"
+      },
+      "hook": "lacity_speeds",
+      "style": {
+        "metric": "p85",
+        "stops": [
+          [
+            20,
+            4
+          ],
+          [
+            35,
+            6
+          ],
+          [
+            55,
+            9
+          ]
+        ],
+        "label": "{p85} mph"
+      },
+      "card": {
+        "title": "{street} {at}",
+        "sub": "{dir} lane {lane}",
+        "fields": [
+          [
+            "85th percentile",
+            "p85",
+            "mph"
+          ],
+          [
+            "Average speed",
+            "avg",
+            "mph"
+          ],
+          [
+            "Posted limit",
+            "posted",
+            "mph"
+          ],
+          [
+            "24-hour volume, this lane",
+            "volume",
+            "num"
+          ],
+          [
+            "Day",
+            "daytype",
+            "text"
+          ],
+          [
+            "Study date",
+            "date",
+            "text"
+          ]
+        ],
+        "pdf": "pdf",
+        "note": "24-hour radar study of one lane and direction."
       }
     },
     {
@@ -384,6 +619,289 @@
           ]
         ],
         "note": "Fall count over the count periods of one weekday and one weekend day. Location matched by street and limits ({how})."
+      }
+    },
+    {
+      "id": "osm_control",
+      "group": "control",
+      "title": "Signals, stops and yields, countywide (OpenStreetMap)",
+      "kind": "inventory",
+      "geom": "point",
+      "source": {
+        "name": "OpenStreetMap highway=traffic_signals, stop, give_way, mini_roundabout",
+        "agency": "OpenStreetMap contributors",
+        "url": "https://www.openstreetmap.org/",
+        "license": "ODbL"
+      },
+      "hook": "osm_control",
+      "style": {
+        "minzoom": 11,
+        "stops": [
+          [
+            0,
+            3.5
+          ]
+        ],
+        "colorBy": "control",
+        "colors": {
+          "Signal": "#B0322C",
+          "Pedestrian signal": "#FF6622",
+          "Flashing or emergency signal": "#E89A3C",
+          "All-way stop": "#00242E",
+          "Stop": "#5B7278",
+          "Yield": "#C9A227",
+          "Mini roundabout": "#1B795A"
+        }
+      },
+      "card": {
+        "title": "{control}",
+        "sub": "OpenStreetMap node {osm_id}",
+        "fields": [
+          [
+            "Applies to direction",
+            "direction",
+            "text"
+          ],
+          [
+            "Map date",
+            "date",
+            "text"
+          ]
+        ],
+        "note": "Mapped by volunteers; a stop is tagged where it applies, an all-way stop where every approach stops."
+      }
+    },
+    {
+      "id": "ladot_signals",
+      "group": "control",
+      "title": "Traffic signals, City of LA (LADOT)",
+      "kind": "inventory",
+      "geom": "point",
+      "source": {
+        "name": "LADOT Signal Locations",
+        "agency": "LADOT",
+        "url": "https://maps.lacity.org/lahub/rest/services/LADOT/MapServer/30",
+        "license": "City of Los Angeles open data"
+      },
+      "fetch": {
+        "type": "arcgis",
+        "url": "https://maps.lacity.org/lahub/rest/services/LADOT/MapServer/30",
+        "where": "1=1"
+      },
+      "date": {
+        "live": true
+      },
+      "map": {
+        "sid": "ID",
+        "st1": "ST1",
+        "st2": "ST2",
+        "st3": "ST3"
+      },
+      "hook": "ladot_signals",
+      "style": {
+        "minzoom": 11,
+        "stops": [
+          [
+            0,
+            4
+          ]
+        ]
+      },
+      "card": {
+        "title": "{name}",
+        "sub": "Signal {sid}",
+        "fields": [
+          [
+            "List date",
+            "date",
+            "text"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "ladot_stop_yield",
+      "group": "control",
+      "title": "Stop and yield signs, City of LA (LADOT)",
+      "kind": "inventory",
+      "geom": "point",
+      "source": {
+        "name": "LADOT Stop and Yield Signs",
+        "agency": "LADOT",
+        "url": "https://maps.lacity.org/lahub/rest/services/LADOT/MapServer/19",
+        "license": "City of Los Angeles open data"
+      },
+      "fetch": {
+        "type": "arcgis",
+        "url": "https://maps.lacity.org/lahub/rest/services/LADOT/MapServer/19",
+        "where": "1=1"
+      },
+      "date": {
+        "live": true
+      },
+      "map": {
+        "oid": "OBJECTID",
+        "sign_type": "SIGN_TYPE",
+        "facing": "FACE_DIREC",
+        "tooltip": "TOOLTIP"
+      },
+      "hook": "ladot_stop_yield",
+      "style": {
+        "minzoom": 13,
+        "stops": [
+          [
+            0,
+            3.5
+          ]
+        ],
+        "colorBy": "control",
+        "colors": {
+          "Stop": "#B0322C",
+          "Yield": "#C9A227"
+        }
+      },
+      "card": {
+        "title": "{control} sign",
+        "sub": "{street} at {cross}",
+        "fields": [
+          [
+            "Faces traffic going",
+            "faces",
+            "text"
+          ],
+          [
+            "List date",
+            "date",
+            "text"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "county_signals",
+      "group": "control",
+      "title": "Traffic signals, county maintained (LA County Public Works)",
+      "kind": "inventory",
+      "geom": "point",
+      "source": {
+        "name": "PW Jurisdiction Locator, signals",
+        "agency": "LA County Public Works",
+        "url": "https://dpw.gis.lacounty.gov/dpw/rest/services/PW_Jurisdiction_Locator/MapServer/16",
+        "license": "LA County open data"
+      },
+      "fetch": {
+        "type": "arcgis",
+        "url": "https://dpw.gis.lacounty.gov/dpw/rest/services/PW_Jurisdiction_Locator/MapServer/16",
+        "where": "1=1"
+      },
+      "date": {
+        "live": true
+      },
+      "style": {
+        "minzoom": 11,
+        "stops": [
+          [
+            0,
+            4
+          ]
+        ]
+      },
+      "card": {
+        "title": "County signal",
+        "sub": "",
+        "fields": [
+          [
+            "List date",
+            "date",
+            "text"
+          ]
+        ],
+        "raw": true
+      }
+    },
+    {
+      "id": "transit_routes",
+      "group": "transit",
+      "title": "Transit routes, every operator (GTFS)",
+      "kind": "inventory",
+      "geom": "line",
+      "source": {
+        "name": "Each operator's GTFS feed, found through the Mobility Database catalog",
+        "agency": "Transit operators (listed per route)",
+        "url": "https://mobilitydatabase.org/",
+        "license": "Each operator's GTFS terms"
+      },
+      "hook": "transit_routes",
+      "style": {
+        "minzoom": 9,
+        "stops": [
+          [
+            0,
+            2.2
+          ]
+        ],
+        "colorField": "color",
+        "label": "{route}"
+      },
+      "card": {
+        "title": "{operator} {route}",
+        "sub": "{name}",
+        "fields": [
+          [
+            "Mode",
+            "mode",
+            "text"
+          ],
+          [
+            "Schedule runs to",
+            "service_to",
+            "text"
+          ],
+          [
+            "Feed read",
+            "date",
+            "text"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "transit_stops",
+      "group": "transit",
+      "title": "Transit stops",
+      "kind": "inventory",
+      "geom": "point",
+      "source": {
+        "name": "Each operator's GTFS feed",
+        "agency": "Transit operators (listed per stop)",
+        "url": "https://mobilitydatabase.org/",
+        "license": "Each operator's GTFS terms"
+      },
+      "hook": "transit_stops",
+      "style": {
+        "minzoom": 14,
+        "stops": [
+          [
+            0,
+            3
+          ]
+        ]
+      },
+      "card": {
+        "title": "{stop}",
+        "sub": "{operator}",
+        "fields": [
+          [
+            "Stop code",
+            "code",
+            "text"
+          ],
+          [
+            "Feed read",
+            "date",
+            "text"
+          ]
+        ]
       }
     },
     {
@@ -895,6 +1413,18 @@
     {
       "name": "\"Parking Permit\" layer found under Lancaster",
       "why": "It maps Lancaster, Pennsylvania; the build's county-boundary check caught it."
+    },
+    {
+      "name": "Pasadena traffic counts (24-hour and turning movement counts)",
+      "why": "Held in the city's MS2 Traffic Count Database, which refuses automated downloads; the city's last published count summary is from 2019."
+    },
+    {
+      "name": "Pasadena traffic signals layer",
+      "why": "Last updated 2019; OpenStreetMap covers Pasadena signals."
+    },
+    {
+      "name": "LADOT count reports dated before 2021 or with no date in the file name",
+      "why": "Before the date limit, or the date can't be confirmed."
     }
   ]
 }

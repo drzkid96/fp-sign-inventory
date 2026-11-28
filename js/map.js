@@ -82,7 +82,7 @@ const trustOf = code => (TRUST[String(code || '').split('/')[0].split('(')[0].tr
 
 map.on('load', async () => {
   const get = (u, d) => fetch(u + V).then(r => r.ok ? r.json() : d).catch(() => d);
-  const [tiles, idx, cmap, trust, agency, fp, cc] = await Promise.all([get('data/base/tiles.geojson', {features: []}), get('assets/signs/index.json', {}),
+  const [idx, cmap, trust, agency, fp, cc] = await Promise.all([get('assets/signs/index.json', {}),
     get('data/classmap.json', {}), get('data/base/trust.json', {codes: {}}), get('data/base/agency.json', null), get('data/base/fp.geojson', {features: []}), get('assets/signs/county-codes.json', {})]);
   IDX = idx; CMAP = cmap; TRUST = trust.codes || {}; CC = cc;
   FP = fp.features.filter(f => !f.properties.name && (Date.parse(f.properties.seen) || 0) >= SINCE);
@@ -93,11 +93,6 @@ map.on('load', async () => {
   map.addSource('esri', {type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 20, attribution: 'Imagery © Esri'});
   map.addLayer({id: 'base-usgs', type: 'raster', source: 'usgs', maxzoom: 15, layout: {visibility: 'none'}}, firstLabel);
   map.addLayer({id: 'base-esri', type: 'raster', source: 'esri', minzoom: 15, layout: {visibility: 'none'}}, firstLabel);
-
-  // build order tiles
-  map.addSource('tiles', {type: 'geojson', data: tiles});
-  map.addLayer({id: 'tiles-fill', type: 'fill', source: 'tiles', maxzoom: 15, paint: {'fill-color': ['match', ['get', 'p'], 1, P_COL[0], 2, P_COL[1], 3, P_COL[2], 4, P_COL[3], P_COL[4]],
-    'fill-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0.55, 12, 0.28, 14, 0.05]}}, firstLabel);
 
   // photo years
   const yearX = ['step', ['to-number', ['get', 'captured_at'], 0], Y_BRK[0][1]].concat(Y_BRK.slice(1).flatMap(([y, c]) => [Date.UTC(y, 0, 1), c]));
@@ -140,11 +135,18 @@ map.on('load', async () => {
   // legends and search list
   $('#ramp-tiles').innerHTML = P_COL.map((c, i) => `<span style="background:${c}" class="${i > 1 ? 'dk' : ''}">P${i + 1}</span>`).join('');
   $('#ramp-photos').innerHTML = Y_BRK.map(([, c, t], i) => `<span style="background:${c}" class="${i < 3 ? 'dk' : ''}">${t}</span>`).join('');
-  const cs = {};
-  for (const f of tiles.features) { const p = f.properties; if (p.city === 'Unincorporated') continue;
-    const c = cs[p.city] ||= {name: p.city, rank: 1e9, b: [180, 90, -180, -90]}; c.rank = Math.min(c.rank, p.rank);
-    for (const [x, y] of f.geometry.coordinates[0]) { c.b[0] = Math.min(c.b[0], x); c.b[1] = Math.min(c.b[1], y); c.b[2] = Math.max(c.b[2], x); c.b[3] = Math.max(c.b[3], y); } }
-  CITIES = Object.values(cs).sort((a, b) => a.rank - b.rank);
+  // build order tiles and the city list load after the map is up (2 MB)
+  get('data/base/tiles.geojson', {features: []}).then(tiles => {
+    map.addSource('tiles', {type: 'geojson', data: tiles});
+    map.addLayer({id: 'tiles-fill', type: 'fill', source: 'tiles', maxzoom: 15, layout: {visibility: on('tiles') ? 'visible' : 'none'},
+      paint: {'fill-color': ['match', ['get', 'p'], 1, P_COL[0], 2, P_COL[1], 3, P_COL[2], 4, P_COL[3], P_COL[4]],
+      'fill-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0.55, 12, 0.28, 14, 0.05]}}, map.getLayer('ph-seq') ? 'ph-seq' : firstLabel);
+    const cs = {};
+    for (const f of tiles.features) { const p = f.properties; if (p.city === 'Unincorporated') continue;
+      const c = cs[p.city] ||= {name: p.city, rank: 1e9, b: [180, 90, -180, -90]}; c.rank = Math.min(c.rank, p.rank);
+      for (const [x, y] of f.geometry.coordinates[0]) { c.b[0] = Math.min(c.b[0], x); c.b[1] = Math.min(c.b[1], y); c.b[2] = Math.max(c.b[2], x); c.b[3] = Math.max(c.b[3], y); } }
+    CITIES = Object.values(cs).sort((a, b) => a.rank - b.rank);
+  });
 
   // toggles
   const groups = {tiles: ['tiles-fill'], photos: ['ph-seq'], signals: ['signals'], fp: ['fp-dot'], mly: ['mly-dot'], county: ['county-dot']};

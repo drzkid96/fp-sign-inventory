@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="css/map.css?v=6">
+<link rel="stylesheet" href="css/map.css?v=7">
 </head>
 <body>
 <div id="map"></div>
@@ -23,7 +23,10 @@
       <div id="hits" hidden></div>
     </div>
 
-    <h2>SIGNS</h2>
+    <div class="views" id="views"></div>
+    <div id="legend" hidden></div>
+
+    <details class="sec" open><summary>SIGNS</summary>
     <div class="chips" id="sign-chips">
       <button data-layer="fp" class="on"><i style="--c:#1B795A"></i>Scanned</button>
       <button data-layer="mly" class="on"><i style="--c:#568CBB"></i>Instant</button>
@@ -35,19 +38,24 @@
       <dt><i style="--c:#00242E"></i>County records</dt><dd id="county-dd">LA County Public Works sign inventory (unincorporated areas).</dd>
     </dl>
 
-    <h2>DATA <a class="h2link" href="data.html">Sources and downloads</a></h2>
+    </details>
+
+    <details class="sec" open><summary>DATA <a class="h2link" href="data.html">Sources and downloads</a></summary>
     <div id="data-groups"><p class="foot">Loading layers…</p></div>
     <label class="since">Show data from <select id="since"></select> on</label>
+    </details>
 
-    <h2>MAP</h2>
+    <details class="sec"><summary>MAP</summary>
     <div class="chips">
-      <button data-layer="tiles" class="on"><i class="sq" style="--c:#1B795A"></i>Build order</button>
+      <button data-layer="tiles"><i class="sq" style="--c:#1B795A"></i>Build order</button>
       <button data-layer="photos"><i class="ln" style="--c:#6BD688"></i>Photo years</button>
       <button data-layer="signals"><i style="--c:#FF6622"></i>Signals</button>
     </div>
-    <div class="ramp" id="ramp-tiles"></div>
+    <div class="ramp" id="ramp-tiles" hidden></div>
     <div class="ramp" id="ramp-photos" hidden></div>
     <div class="seg"><button data-base="map" class="on">MAP</button><button data-base="aerial">AERIAL</button></div>
+
+    </details>
 
     <p class="foot">Sources: Mapillary (CC BY-SA), LA County Public Works, OpenStreetMap contributors, US Census. <a href="data.html">Data sources</a> · <a href="PLAN.md">Plan</a> · <a href="areas.html">Area tool</a></p>
   </div>
@@ -63,7 +71,7 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"></script>
 <script src="js/config.js?v=2"></script>
-<script src="js/map.js?v=12"></script>
-<script src="js/layers.js?v=2"></script>
+<script src="js/map.js?v=13"></script>
+<script src="js/layers.js?v=3"></script>
 </body>
 </html>
