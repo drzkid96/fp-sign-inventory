@@ -40,22 +40,28 @@ summary = {}
 for name, url, kind in LAYERS:
     meta = get(url, {'f': 'json'})
     n = get(url + '/query', {'where': '1=1', 'returnCountOnly': 'true', 'f': 'json'}).get('count', 0)
-    step = min(meta.get('maxRecordCount') or 1000, 2000); feats = []
-    print(name, n, 'features; fields:', [f['name'] for f in meta.get('fields', [])][:40])
-    for off in range(0, n, step):
+    step = min(meta.get('maxRecordCount') or 1000, 2000); feats = []; off = 0; bad = 0
+    print(name, n, 'reported; fields:', [f['name'] for f in meta.get('fields', [])][:60])
+    while True:   # page until a short page (the reported count can be 0 or wrong)
         d = get(url + '/query', {'where': '1=1', 'outFields': '*', 'outSR': 4326, 'f': 'geojson', 'resultOffset': off, 'resultRecordCount': step, 'orderByFields': meta.get('objectIdField') or 'OBJECTID'})
-        for f in d.get('features', []):
+        got = d.get('features', []); off += step
+        for f in got:
             p = f.get('properties') or {}
             f['properties'] = {
-                'code': pick(p, 'SGN_CODE', 'MARKCODE', 'STRIPECODE', 'S_TYPE', 'CODE', 'SIGNCODE'),
-                'desc': pick(p, 'SGN_DESC', 'DESCRIPTION', 'MARKDESC', 'S_DESC', 'DESC_', 'LOCATION'),
+                'code': pick(p, 'SGN_CODE', 'MARKCODE', 'STRIPECODE', 'S_TYPE', 'SIG_TYPE', 'CODE', 'SIGNCODE'),
+                'desc': pick(p, 'LONG_DESCRIPTION', 'SGN_DESC', 'DESCRIPTION', 'MARKDESC', 'S_DESC', 'DESC_'),
+                'dir': pick(p, 'SGN_DIR'),
                 'status': pick(p, 'STATUS'),
                 'date': day(pick(p, 'LAST_MAINT_DATE', 'INSTALLDATE', 'INSTALL_DATE', 'LASTMODDATE')),
                 'loc': pick(p, 'LOCATION', 'STREET'),
                 'src': 'LA County Public Works', 'kind': kind}
-            if f.get('geometry'): feats.append(f)
-        print(f'  {len(feats)}/{n}', flush=True)
+            g = f.get('geometry') or {}
+            if g.get('coordinates') and g['coordinates'] != [] and 'NaN' not in json.dumps(g['coordinates'])[:200]: feats.append(f)
+            else: bad += 1
+        if len(feats) % 20000 < step: print(f'  {len(feats)} kept, {bad} without location', flush=True)
+        if len(got) < step: break
+    print(f'  done: {len(feats)} kept, {bad} without location', flush=True)
     json.dump({'type': 'FeatureCollection', 'features': feats}, open(f'{OUT}/{name}.geojson', 'w'), separators=(',', ':'))
-    summary[name] = {'count': len(feats), 'source': url, 'downloaded': time.strftime('%Y-%m-%d')}
+    summary[name] = {'count': len(feats), 'no_location': bad, 'source': url, 'downloaded': time.strftime('%Y-%m-%d')}
 json.dump(summary, open(f'{OUT}/summary.json', 'w'), indent=1)
 print(json.dumps(summary, indent=1))
