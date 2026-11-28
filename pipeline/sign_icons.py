@@ -14,7 +14,7 @@ signs = json.load(open(f'{SRC}/data/signs/signs.json'))
 index = {}; made = 0
 for s in signs:
     k = key(s['code']); svg = s.get('svg') or ''
-    index[k] = {'code': s['code'], 'name': s.get('name', ''), 'slug': s.get('slug', k)}
+    index[k] = {'code': s['code'], 'name': s.get('name', ''), 'slug': s.get('slug', k), 'svg': svg if 'Sheet_' not in svg else ''}
     if 'Sheet_' in svg or not svg: continue
     path = SRC + '/public' + svg
     if not os.path.exists(path): continue

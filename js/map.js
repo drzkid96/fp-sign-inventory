@@ -1,160 +1,260 @@
-/* LA County street inventory: one map of priority tiles, agency records, street-level photo coverage and sign layers. */
+/* LA County street inventory map.
+   Signs from three sources drawn as their sign faces (artwork from the standards site), a card per sign with its photo,
+   build-order tiles, photo years and signals as context. */
 const C = window.CFG, $ = s => document.querySelector(s), V = '?v=' + (C.DATA_V || 1);
+const SSS = 'https://drzkid96.github.io/SoCal-Super-Standards';
+const SRC = {fp: {c: '#1B795A', t: 'SCANNED'}, mly: {c: '#568CBB', t: 'INSTANT'}, county: {c: '#00242E', t: 'COUNTY RECORD'}};
 const P_COL = ['#00574A', '#1B795A', '#6BD688', '#B9E6B4', '#E4EFE2'];
-const Y_BRK = [[0, '#C9D3D5', 'BEFORE 2018'], [2018, '#9FB3B8', '2018-19'], [2020, '#6BD688', '2020-21'], [2022, '#1B795A', '2022-23'], [2024, '#00242E', '2024+']];
-const AG = {   // agency layers in data/base/agency.pmtiles
-  signs:    {label: 'County signs', type: 'circle', color: '#00242E'},
-  striping: {label: 'County striping', type: 'line', color: '#568CBB'},
-  markings: {label: 'County markings', type: 'circle', color: '#B07CC6'},
-  signals:  {label: 'County signals', type: 'circle', color: '#FF6622'},
-};
-const sv = (lat, lon, h) => `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat.toFixed(6)},${lon.toFixed(6)}${h != null ? '&heading=' + Math.round(h) : ''}`;
-const mlyLink = (lat, lon) => `https://www.mapillary.com/app/?lat=${lat.toFixed(6)}&lng=${lon.toFixed(6)}&z=19`;
+const Y_BRK = [[0, '#C9D3D5', '<2018'], [2018, '#9FB3B8', '18-19'], [2020, '#6BD688', '20-21'], [2022, '#1B795A', '22-23'], [2024, '#00242E', '2024+']];
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 const day = ms => ms ? new Date(+ms).toISOString().slice(0, 10) : '';
+const keyOf = c => String(c || '').toLowerCase().replace(/[() ]/g, '');
+const famKey = c => keyOf(String(c || '').split('/')[0].replace(/\s*\(\d+\)\s*$/, ''));
+const sv = (lat, lon) => `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat.toFixed(6)},${lon.toFixed(6)}`;
+const mlyAt = (lat, lon) => `https://www.mapillary.com/app/?lat=${lat.toFixed(6)}&lng=${lon.toFixed(6)}&z=19`;
+const graph = (path, q = '') => fetch(`https://graph.mapillary.com/${path}${path.includes('?') ? '&' : '?'}${q}&access_token=${encodeURIComponent(C.MLY)}`).then(r => r.json());
 
 const proto = new pmtiles.Protocol(); maplibregl.addProtocol('pmtiles', proto.tile);
 const map = new maplibregl.Map({
-  container: 'map', center: [-118.25, 34.05], zoom: 9.2, minZoom: 8, maxZoom: 20, hash: true, attributionControl: {compact: true},
+  container: 'map', center: [-118.25, 34.05], zoom: 9.3, minZoom: 8, maxZoom: 20.5, hash: true, attributionControl: {compact: true},
   style: {version: 8, glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf', sources: {
-    light: {type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 19, attribution: '© OpenStreetMap contributors'},
-    aerial: {type: 'raster', tiles: ['https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 16, attribution: 'Imagery: USGS The National Map'},
-    hires: {type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 20, attribution: 'Imagery © Esri'}},
-    layers: [{id: 'light', type: 'raster', source: 'light', paint: {'raster-saturation': -0.85, 'raster-brightness-min': 0.12, 'raster-contrast': -0.1}},
-             {id: 'aerial', type: 'raster', source: 'aerial', maxzoom: 16, layout: {visibility: 'none'}},
-             {id: 'labels', type: 'raster', source: 'hires', minzoom: 16, layout: {visibility: 'none'}}]},
+    osm: {type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 19, attribution: '© OpenStreetMap contributors'},
+    usgs: {type: 'raster', tiles: ['https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 16, attribution: 'USGS'},
+    esri: {type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 20, attribution: 'Imagery © Esri'}},
+    layers: [{id: 'base-map', type: 'raster', source: 'osm', paint: {'raster-saturation': -0.9, 'raster-brightness-min': 0.15, 'raster-contrast': -0.15}},
+             {id: 'base-usgs', type: 'raster', source: 'usgs', maxzoom: 15, layout: {visibility: 'none'}},
+             {id: 'base-esri', type: 'raster', source: 'esri', minzoom: 15, layout: {visibility: 'none'}}]},
 });
-map.addControl(new maplibregl.NavigationControl({showCompass: false}), 'top-right');
-map.addControl(new maplibregl.ScaleControl({unit: 'imperial'}), 'bottom-right');
+map.addControl(new maplibregl.NavigationControl({showCompass: false}), 'bottom-right');
+map.addControl(new maplibregl.GeolocateControl({positionOptions: {enableHighAccuracy: true}}), 'bottom-right');
+map.addControl(new maplibregl.ScaleControl({unit: 'imperial'}), 'bottom-left');
 
-const groups = {tiles: ['tiles-fill', 'tiles-line'], photos: ['ph-seq', 'ph-img'], mly: ['mly'], fp: ['fp']};
+let IDX = {}, CMAP = {}, TRUST = {}, CITIES = [];
+const groups = {tiles: ['tiles-fill', 'tiles-line'], photos: ['ph-seq'], signals: ['signals'],
+  fp: ['fp-dot', 'fp-ico'], mly: ['mly-dot', 'mly-ico'], county: ['county-dot', 'county-ico']};
+const SIGN_LAYERS = ['fp-ico', 'fp-dot', 'county-ico', 'county-dot', 'mly-ico', 'mly-dot'];
 const vis = (ids, on) => ids.forEach(id => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none'));
-const yearColor = ['step', ['to-number', ['get', 'captured_at'], 0], Y_BRK[0][1]].concat(Y_BRK.slice(1).flatMap(([y, c]) => [Date.UTC(y, 0, 1), c]));
+
+/* sign face images: 'sg:<key>' from the icon set, or a plain code tag when there is no artwork */
+const resolve = k => IDX[k]?.icon ? k : IDX[k + 'ca']?.icon ? k + 'ca' : null;
+function tag(text) {
+  const s = 2, f = 13 * s, cv = document.createElement('canvas'), x = cv.getContext('2d');
+  x.font = `700 ${f}px Albert Sans, sans-serif`; const w = Math.ceil(x.measureText(text).width) + 12 * s, h = f + 10 * s;
+  cv.width = w; cv.height = h; x.font = `700 ${f}px Albert Sans, sans-serif`;
+  x.fillStyle = '#fff'; x.strokeStyle = '#00242E'; x.lineWidth = 2 * s; x.beginPath(); x.roundRect(s, s, w - 2 * s, h - 2 * s, 4 * s); x.fill(); x.stroke();
+  x.fillStyle = '#00242E'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, w / 2, h / 2 + s);
+  return {width: w, height: h, data: new Uint8Array(x.getImageData(0, 0, w, h).data.buffer)};
+}
+async function loadIcons(keys) {
+  await Promise.all([...new Set(keys)].filter(k => k && !map.hasImage('sg:' + k)).map(async k => {
+    const r = resolve(k);
+    try {
+      if (!r) throw 0;
+      const img = await map.loadImage(`assets/signs/${r}.png`);
+      if (!map.hasImage('sg:' + k)) map.addImage('sg:' + k, img.data, {pixelRatio: 2});
+    } catch (e) { if (!map.hasImage('sg:' + k)) map.addImage('sg:' + k, tag((IDX[k]?.code || k).toUpperCase()), {pixelRatio: 2}); }
+  }));
+}
+map.on('styleimagemissing', e => { if (e.id.startsWith('sg:') && !map.hasImage(e.id)) map.addImage(e.id, tag(e.id.slice(3).toUpperCase() || '?'), {pixelRatio: 2}); });
+
+/* one source of signs = a dot (always) + its sign face (close in) */
+function signLayers(id, src, extra, iconX, opacityX) {
+  const color = SRC[id].c;
+  map.addLayer(Object.assign({id: id + '-dot', type: 'circle', source: src, minzoom: 13,
+    paint: {'circle-color': color, 'circle-opacity': opacityX || 1, 'circle-stroke-opacity': opacityX || 1,
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 2.2, 16, 4, 19, 6], 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.2}}, extra));
+  map.addLayer(Object.assign({id: id + '-ico', type: 'symbol', source: src, minzoom: 15.5,
+    layout: {'icon-image': iconX, 'icon-size': ['interpolate', ['linear'], ['zoom'], 15.5, 0.42, 18, 0.7, 20, 0.95],
+      'icon-allow-overlap': false, 'icon-padding': 1, 'icon-anchor': 'bottom', 'icon-offset': [0, -4]},
+    paint: {'icon-opacity': opacityX || 1}}, extra));
+}
 
 map.on('load', async () => {
-  // priority tiles
-  map.addSource('tiles', {type: 'geojson', data: 'data/base/tiles.geojson' + V});
-  map.addLayer({id: 'tiles-fill', type: 'fill', source: 'tiles', paint: {
-    'fill-color': ['match', ['get', 'p'], 1, P_COL[0], 2, P_COL[1], 3, P_COL[2], 4, P_COL[3], P_COL[4]],
-    'fill-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0.62, 12, 0.32, 14, 0.08, 15, 0]}});
-  map.addLayer({id: 'tiles-line', type: 'line', source: 'tiles', minzoom: 11, paint: {'line-color': '#fff', 'line-width': 0.6, 'line-opacity': ['interpolate', ['linear'], ['zoom'], 11, 0.6, 15, 0]}});
+  const get = (u, d) => fetch(u + V).then(r => r.ok ? r.json() : d).catch(() => d);
+  const [tiles, idx, cmap, trust, agency] = await Promise.all([get('data/base/tiles.geojson', {features: []}), get('assets/signs/index.json', {}),
+    get('data/classmap.json', {}), get('data/base/trust.json', {codes: {}}), get('data/base/agency.json', null)]);
+  IDX = idx; CMAP = cmap; TRUST = trust.codes || {};
 
-  // street-level photo coverage (Mapillary, live)
-  map.addSource('mlycov', {type: 'vector', tiles: [`https://tiles.mapillary.com/maps/vtp/mly1_public/2/{z}/{x}/{y}?access_token=${C.MLY}`], minzoom: 6, maxzoom: 14, attribution: 'Photos © Mapillary (CC BY-SA)'});
-  map.addLayer({id: 'ph-seq', type: 'line', source: 'mlycov', 'source-layer': 'sequence', minzoom: 12, layout: {visibility: 'none', 'line-cap': 'round'},
-    paint: {'line-color': yearColor, 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 1.2, 17, 4], 'line-opacity': 0.85}});
-  map.addLayer({id: 'ph-img', type: 'circle', source: 'mlycov', 'source-layer': 'image', minzoom: 16, layout: {visibility: 'none'},
-    paint: {'circle-color': yearColor, 'circle-radius': 2.5, 'circle-stroke-color': '#fff', 'circle-stroke-width': 0.5}});
+  // build order tiles
+  map.addSource('tiles', {type: 'geojson', data: tiles});
+  map.addLayer({id: 'tiles-fill', type: 'fill', source: 'tiles', paint: {'fill-color': ['match', ['get', 'p'], 1, P_COL[0], 2, P_COL[1], 3, P_COL[2], 4, P_COL[3], P_COL[4]],
+    'fill-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0.6, 12, 0.3, 14, 0.06, 15, 0]}});
+  map.addLayer({id: 'tiles-line', type: 'line', source: 'tiles', minzoom: 11, maxzoom: 15, paint: {'line-color': '#fff', 'line-width': 0.6, 'line-opacity': 0.6}});
 
-  // agency records (built in the cloud; absent until the first run finishes)
-  let agency = null;
-  try { const r = await fetch('data/base/agency.json' + V); if (r.ok) agency = await r.json(); } catch (e) {}
-  const box = $('#agency');
-  Object.entries(AG).forEach(([k, a]) => {
-    const n = agency && agency['county_' + k] ? agency['county_' + k].count : null;
-    box.insertAdjacentHTML('beforeend', `<div class="row${!n ? ' off' : ''}"><label><input type="checkbox" data-layer="ag-${k}" ${!n ? 'disabled' : ''}>${a.label}${n ? ` <span class="note">(${n.toLocaleString()})</span>` : n === 0 ? ' <span class="note">(not public)</span>' : ''}</label><i class="chip${a.type === 'line' ? ' line' : ''}" style="--c:${a.color}"></i></div>`);
-  });
+  // photo years (Mapillary sequences)
+  const yearX = ['step', ['to-number', ['get', 'captured_at'], 0], Y_BRK[0][1]].concat(Y_BRK.slice(1).flatMap(([y, c]) => [Date.UTC(y, 0, 1), c]));
+  map.addSource('mlycov', {type: 'vector', tiles: [`https://tiles.mapillary.com/maps/vtp/mly1_public/2/{z}/{x}/{y}?access_token=${C.MLY}`], minzoom: 6, maxzoom: 14, attribution: 'Photos © Mapillary'});
+  map.addLayer({id: 'ph-seq', type: 'line', source: 'mlycov', 'source-layer': 'sequence', minzoom: 11, layout: {visibility: 'none', 'line-cap': 'round'},
+    paint: {'line-color': yearX, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 17, 4], 'line-opacity': 0.9}});
+
+  // county records and signals
+  const nCounty = agency?.county_signs?.count || 0, nSig = agency?.county_signals?.count || 0;
   if (agency) {
-    const any = Object.values(agency)[0];
-    $('#agency-note').textContent = `Unincorporated county, downloaded ${any.downloaded}. City records are added city by city in the build order.`;
-    map.addSource('ag', {type: 'vector', url: 'pmtiles://' + location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '') + 'data/base/agency.pmtiles'});
-    Object.entries(AG).forEach(([k, a]) => {
-      groups['ag-' + k] = ['ag-' + k];
-      map.addLayer(a.type === 'line'
-        ? {id: 'ag-' + k, type: 'line', source: 'ag', 'source-layer': k, minzoom: 12, layout: {visibility: 'none'}, paint: {'line-color': a.color, 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 1, 18, 3]}}
-        : {id: 'ag-' + k, type: 'circle', source: 'ag', 'source-layer': k, minzoom: 12, layout: {visibility: 'none'}, paint: {'circle-color': a.color, 'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 2, 18, 6], 'circle-stroke-color': '#fff', 'circle-stroke-width': 1}});
-    });
-  } else $('#agency-note').textContent = 'County sign, striping, marking and signal records are being downloaded in the cloud; they appear here when the run finishes.';
-
-  // Mapillary detected signs (live) and the FP inventory
-  // Mapillary detected signs (live), translated to CA MUTCD codes and graded by the trust table
-  const [CMAP, TRUST] = await Promise.all([fetch('data/classmap.json' + V).then(r => r.json()), fetch('data/base/trust.json' + V).then(r => r.json()).catch(() => ({codes: {}}))]);
-  const fam = c => (c || '').split('/')[0].split('(')[0].trim();
-  window.MLYMAP = CMAP; window.TRUST = TRUST.codes;
-  const byTrust = {likely: [], mixed: [], low: []}, toCode = [];
-  for (const [v, m] of Object.entries(CMAP)) {
-    const c = fam(m.code); if (!c) continue; toCode.push(v, c + (m.val ? ' (' + m.val + ')' : ''));
-    const t = (TRUST.codes[c] || {}).trust; if (byTrust[t]) byTrust[t].push(v);
+    map.addSource('ag', {type: 'vector', url: 'pmtiles://' + new URL('data/base/agency.pmtiles', location.href).href});
+    signLayers('county', 'ag', {'source-layer': 'signs'}, ['concat', 'sg:', ['coalesce', ['get', 'key'], ['downcase', ['get', 'code']]]]);
+    map.addLayer({id: 'signals', type: 'circle', source: 'ag', 'source-layer': 'signals', minzoom: 11, layout: {visibility: 'none'},
+      paint: {'circle-color': '#FF6622', 'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 2.5, 18, 7], 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.5}});
+    $('#county-dd').textContent = `LA County Public Works inventory, ${nCounty.toLocaleString()} signs in unincorporated areas (downloaded ${agency.county_signs.downloaded}).`;
   }
-  const trustX = ['match', ['get', 'value']]; for (const k of ['likely', 'mixed', 'low']) if (byTrust[k].length) trustX.push(byTrust[k], k); trustX.push('other');
-  const codeX = ['match', ['get', 'value'], ...toCode, ''];
+  if (!nCounty) document.querySelector('[data-layer="county"]').disabled = true;
+  if (!nSig) document.querySelector('[data-layer="signals"]').disabled = true;
+
+  // instant (Mapillary detections, code translated, faded by trust)
+  const iconOf = {}, trustOf = {likely: [], mixed: []};
+  for (const [v, m] of Object.entries(CMAP)) {
+    const k = famKey(m.code); if (!k) continue; iconOf[v] = k;
+    const t = (TRUST[String(m.code).split('/')[0].split('(')[0].trim()] || {}).trust; if (trustOf[t]) trustOf[t].push(v);
+  }
+  const vals = Object.keys(iconOf);
+  const mIcon = vals.length ? ['match', ['get', 'value'], ...vals.flatMap(v => [v, 'sg:' + iconOf[v]]), 'sg:'] : 'sg:';
+  const mOp = ['match', ['get', 'value']]; if (trustOf.likely.length) mOp.push(trustOf.likely, 1); if (trustOf.mixed.length) mOp.push(trustOf.mixed, 0.75); mOp.push(0.4);
   map.addSource('mlysign', {type: 'vector', tiles: [`https://tiles.mapillary.com/maps/vtp/mly_map_feature_traffic_sign/2/{z}/{x}/{y}?access_token=${C.MLY}`], minzoom: 14, maxzoom: 14});
-  map.addLayer({id: 'mly', type: 'circle', source: 'mlysign', 'source-layer': 'traffic_sign', minzoom: 14, layout: {visibility: 'none'},
-    filter: ['!=', codeX, ''],
-    paint: {'circle-color': ['match', trustX, 'likely', '#568CBB', 'mixed', '#ffffff', '#ffffff'],
-            'circle-stroke-color': ['match', trustX, 'likely', '#ffffff', 'mixed', '#568CBB', '#9FB3B8'],
-            'circle-stroke-width': ['match', trustX, 'likely', 1, 2],
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, ['match', trustX, 'likely', 3, 'mixed', 2.6, 2], 19, ['match', trustX, 'likely', 7, 'mixed', 6, 4.5]]}});
-  map.addLayer({id: 'mly-lab', type: 'symbol', source: 'mlysign', 'source-layer': 'traffic_sign', minzoom: 17, layout: {visibility: 'none',
-    'text-field': codeX, 'text-font': ['Noto Sans Bold'], 'text-size': 11, 'text-offset': [0, 1.1], 'text-anchor': 'top', 'text-allow-overlap': false},
-    paint: {'text-color': '#00242E', 'text-halo-color': '#ffffff', 'text-halo-width': 1.6}});
-  groups.mly = ['mly', 'mly-lab'];
-  window.MLYX = {trustX, codeX};
-  map.addSource('fp', {type: 'geojson', data: 'data/base/fp.geojson' + V});
-  map.addLayer({id: 'fp', type: 'circle', source: 'fp', paint: {
-    'circle-color': ['case', ['==', ['get', 'name'], 1], '#9FB3B8', '#1B795A'],
-    'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 2, 14, 3.5, 19, 8],
-    'circle-stroke-color': ['case', ['==', ['get', 'status'], 'review'], '#FF6622', '#fff'], 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 10, 0.5, 16, 2]}});
+  signLayers('mly', 'mlysign', {'source-layer': 'traffic_sign', filter: ['in', ['get', 'value'], ['literal', vals]]}, mIcon, mOp);
+
+  // scanned (our model)
+  const fp = await get('data/base/fp.geojson', {type: 'FeatureCollection', features: []});
+  fp.features = fp.features.filter(f => !f.properties.name);
+  fp.features.forEach(f => f.properties.key = f.properties.key || famKey(f.properties.code));
+  map.addSource('fp', {type: 'geojson', data: fp});
+  signLayers('fp', 'fp', {}, ['concat', 'sg:', ['get', 'key']]);
+
+  await loadIcons([...Object.values(iconOf), ...fp.features.map(f => f.properties.key), ...(agency?.county_signs?.keys || [])]);
 
   // legends
-  $('#ramp-p').innerHTML = P_COL.map((c, i) => `<span style="background:${c}" class="${i > 1 ? 'dk' : ''}">P${i + 1}</span>`).join('');
-  $('#ramp-y').innerHTML = Y_BRK.map(([, c, t], i) => `<span style="background:${c}" class="${i < 3 ? 'dk' : ''}">${t}</span>`).join('');
+  $('#ramp-tiles').innerHTML = P_COL.map((c, i) => `<span style="background:${c}" class="${i > 1 ? 'dk' : ''}">P${i + 1}</span>`).join('');
+  $('#ramp-photos').innerHTML = Y_BRK.map(([, c, t], i) => `<span style="background:${c}" class="${i < 3 ? 'dk' : ''}">${t}</span>`).join('');
 
-  // tiles summary and the GO TO list in build order
-  const T = await (await fetch('data/base/tiles.geojson' + V)).json();
-  const cities = {};
-  for (const f of T.features) {
-    const p = f.properties, cs = f.geometry.coordinates[0];
-    const c = cities[p.city] ||= {best: 1e9, n: 0, b: [180, 90, -180, -90]};
-    c.best = Math.min(c.best, p.rank); c.n++;
-    for (const [x, y] of cs) { c.b[0] = Math.min(c.b[0], x); c.b[1] = Math.min(c.b[1], y); c.b[2] = Math.max(c.b[2], x); c.b[3] = Math.max(c.b[3], y); }
+  // cities for search
+  const cs = {};
+  for (const f of tiles.features) {
+    const p = f.properties; if (p.city === 'Unincorporated') continue;
+    const c = cs[p.city] ||= {name: p.city, rank: 1e9, b: [180, 90, -180, -90]}; c.rank = Math.min(c.rank, p.rank);
+    for (const [x, y] of f.geometry.coordinates[0]) { c.b[0] = Math.min(c.b[0], x); c.b[1] = Math.min(c.b[1], y); c.b[2] = Math.max(c.b[2], x); c.b[3] = Math.max(c.b[3], y); }
   }
-  const byP = [1, 2, 3, 4, 5].map(k => T.features.filter(f => f.properties.p === k).length);
-  $('#tiles-note').textContent = `${T.features.length.toLocaleString()} tiles with streets. Each priority holds a fifth of the weighted street length: P1 ${byP[0]} tiles, P5 ${byP[4].toLocaleString()}. Ranked by street density, arterials, urban area and jobs and residents.`;
-  Object.entries(cities).filter(([n]) => n !== 'Unincorporated').sort((a, b) => a[1].best - b[1].best)
-    .forEach(([n, c]) => $('#city').insertAdjacentHTML('beforeend', `<option value="${c.b.join(',')}">${esc(n)}</option>`));
-  $('#city').onchange = e => { const v = e.target.value; if (!v) return map.flyTo({center: [-118.25, 34.05], zoom: 9.2}); map.fitBounds(v.split(',').map(Number), {padding: 40, maxZoom: 14}); };
+  CITIES = Object.values(cs).sort((a, b) => a.rank - b.rank);
 
   // toggles
-  document.querySelectorAll('input[data-layer]').forEach(i => {
-    const apply = () => { vis(groups[i.dataset.layer] || [], i.checked); if (i.dataset.layer === 'photos') $('#ramp-y').hidden = !i.checked; hud(); };
-    i.onchange = apply; apply();
+  document.querySelectorAll('.chips button[data-layer]').forEach(b => {
+    const apply = () => { vis(groups[b.dataset.layer] || [], b.classList.contains('on')); if (b.dataset.layer === 'tiles') $('#ramp-tiles').hidden = !b.classList.contains('on');
+      if (b.dataset.layer === 'photos') $('#ramp-photos').hidden = !b.classList.contains('on'); hint(); };
+    b.onclick = () => { if (b.disabled) return; b.classList.toggle('on'); apply(); };
+    if (b.disabled) b.classList.remove('on'); apply();
   });
   document.querySelectorAll('[data-base]').forEach(b => b.onclick = () => {
     document.querySelectorAll('[data-base]').forEach(x => x.classList.toggle('on', x === b));
-    const a = b.dataset.base === 'aerial'; vis(['aerial', 'labels'], a); vis(['light'], !a);
+    const a = b.dataset.base === 'aerial'; vis(['base-usgs', 'base-esri'], a); vis(['base-map'], !a);
   });
-  map.on('zoomend', hud); hud();
+  map.on('zoomend', hint); hint();
 });
 
-function hud() {
-  const z = map.getZoom(), need = ['photos', 'mly'].some(k => document.querySelector(`input[data-layer="${k}"]`)?.checked) && z < 14
-    || [...document.querySelectorAll('input[data-layer^="ag-"]')].some(i => i.checked) && z < 12;
-  $('#hud').hidden = !need; $('#hud').textContent = 'Zoom in to see the street-level layers.';
+function hint() {
+  const on = ['fp', 'mly', 'county'].some(k => document.querySelector(`[data-layer="${k}"]`)?.classList.contains('on'));
+  const z = map.getZoom(); $('#hint').hidden = !(on && z < 15.5);
+  $('#hint').textContent = z < 13 ? 'Zoom in to see signs' : 'Zoom in closer to see sign faces';
 }
 
-// popups
-const pop = (e, html) => new maplibregl.Popup({maxWidth: '300px'}).setLngLat(e.lngLat).setHTML(`<div class="pop">${html}</div>`).addTo(map);
-const rows = o => '<table>' + Object.entries(o).filter(([, v]) => v !== '' && v != null).map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('') + '</table>';
-const links = (lat, lon, h) => `<a href="${sv(lat, lon, h)}" target="_blank" rel="noopener">Street View</a> · <a href="${mlyLink(lat, lon)}" target="_blank" rel="noopener">Mapillary</a>`;
-const hitAt = e => { const L = ['fp', 'mly', 'ag-signals', 'ag-signs', 'ag-markings', 'ag-striping', 'ph-img', 'tiles-fill'].filter(id => map.getLayer(id) && map.getLayoutProperty(id, 'visibility') !== 'none');
-  return map.queryRenderedFeatures([[e.point.x - 5, e.point.y - 5], [e.point.x + 5, e.point.y + 5]], {layers: L})[0]; };
+/* panel: fold and search */
+$('#fold').onclick = () => { $('#panel').classList.toggle('folded'); $('#fold').textContent = $('#panel').classList.contains('folded') ? '+' : '–'; };
+let qT;
+$('#q').oninput = () => { clearTimeout(qT); qT = setTimeout(search, 300); };
+$('#q').onkeydown = e => { if (e.key === 'Enter') { const b = $('#hits button'); if (b) b.click(); } };
+async function search() {
+  const q = $('#q').value.trim(), box = $('#hits'); if (q.length < 2) { box.hidden = true; return; }
+  const ql = q.toLowerCase(), local = CITIES.filter(c => c.name.toLowerCase().includes(ql)).slice(0, 4);
+  let geo = [];
+  if (q.length > 3) try {
+    geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&bounded=1&viewbox=-118.95,34.83,-117.64,33.70&q=${encodeURIComponent(q)}`).then(r => r.json());
+  } catch (e) {}
+  box.innerHTML = local.map((c, i) => `<button data-c="${i}">${esc(c.name)} <small>city</small></button>`).join('') +
+    geo.map((g, i) => `<button data-g="${i}">${esc(g.display_name.split(',').slice(0, 3).join(','))}</button>`).join('') || '<button disabled>No match</button>';
+  box.hidden = false;
+  box.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { map.fitBounds(local[+b.dataset.c].b, {padding: 40}); box.hidden = true; });
+  box.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { const g = geo[+b.dataset.g]; map.flyTo({center: [+g.lon, +g.lat], zoom: 17.5}); box.hidden = true; });
+}
+document.addEventListener('click', e => { if (!e.target.closest('.search')) $('#hits').hidden = true; });
+
+/* sign card */
+$('#close').onclick = () => { $('#card').hidden = true; if (map.getSource('sel')) map.getSource('sel').setData({type: 'FeatureCollection', features: []}); };
 map.on('click', e => {
-  const f = hitAt(e); if (!f) return; const p = f.properties, [lon, lat] = f.geometry.type === 'Point' ? f.geometry.coordinates : [e.lngLat.lng, e.lngLat.lat];
-  const id = f.layer.id;
-  if (id === 'fp') pop(e, `<h3>${esc(p.code)}</h3><span class="tag${p.status === 'review' ? ' rv' : ''}">${p.status === 'review' ? 'CHECK IN FIELD' : p.name ? 'STREET NAME' : 'HIGH CONFIDENCE'}</span>${p.crop ? `<img src="${p.crop}" alt="">` : ''}` +
-    rows({Location: esc(p.loc), Photo: esc(p.seen), Confidence: p.conf ? Math.round(p.conf * 100) + '%' : '', Area: esc(p.area), Source: 'FP street-level inventory'}) + links(lat, lon, p.dir));
-  else if (id === 'mly') {
-    const m = MLYMAP[p.value] || {}, c = (m.code || '').split('/')[0].split('(')[0].trim(), t = TRUST[c] || {trust: 'untested'};
-    const TT = {likely: 'LIKELY RIGHT', mixed: 'MIXED', low: 'OFTEN WRONG', untested: 'NOT YET TESTED'};
-    pop(e, `<h3>${esc(c)}${m.val ? ' (' + esc(m.val) + ')' : ''}</h3><span class="tag${t.trust === 'likely' ? '' : ' rv'}">${TT[t.trust]}</span>` +
-      rows({'Agreement': t.found != null ? `found ${Math.round(t.found * 100)}% of our ${t.ours} scanned ${esc(c)} signs` : '', 'Precision': t.precision != null ? Math.round(t.precision * 100) + '% of its ' + esc(c) + ' calls match ours' : '',
-            'Mapillary class': esc(p.value), 'First seen': day(p.first_seen_at), 'Last seen': day(p.last_seen_at), Source: 'Mapillary detection, code translated, not yet read by our model'}) + links(lat, lon));
+  const L = SIGN_LAYERS.filter(id => map.getLayer(id) && map.getLayoutProperty(id, 'visibility') !== 'none');
+  const hit = map.queryRenderedFeatures([[e.point.x - 8, e.point.y - 8], [e.point.x + 8, e.point.y + 8]], {layers: L});
+  const order = ['fp', 'county', 'mly'];
+  const f = hit.sort((a, b) => order.indexOf(a.layer.id.split('-')[0]) - order.indexOf(b.layer.id.split('-')[0]))[0];
+  if (f) return openCard(f.layer.id.split('-')[0], f);
+  const t = map.getLayer('tiles-fill') && map.getLayoutProperty('tiles-fill', 'visibility') !== 'none' && map.getZoom() < 14 && map.queryRenderedFeatures(e.point, {layers: ['tiles-fill']})[0];
+  if (t) { const p = t.properties;
+    new maplibregl.Popup({maxWidth: '240px'}).setLngLat(e.lngLat).setHTML(`<b>${esc(p.city)}</b> · P${p.p}<br><small>Build order #${p.rank.toLocaleString()} of 8,717 · ${p.art} km arterials · ${(p.jobs + p.res).toLocaleString()} jobs and residents</small>`).addTo(map); }
+});
+SIGN_LAYERS.forEach(id => { map.on('mouseenter', id, () => map.getCanvas().style.cursor = 'pointer'); map.on('mouseleave', id, () => map.getCanvas().style.cursor = ''); });
+
+function openCard(src, f) {
+  const p = f.properties, [lon, lat] = f.geometry.coordinates;
+  let code = '', val = '', badges = [], facts = {}, photo = '';
+  if (src === 'fp') {
+    code = String(p.code || '').replace(/\s*\(\d+\)$/, ''); val = p.val || (String(p.code).match(/\((\d+)\)$/) || [])[1] || '';
+    badges = [`<span class="badge" style="--c:${SRC.fp.c}">${SRC.fp.t}</span>`, p.status === 'review' ? '<span class="badge warn">CHECK IN FIELD</span>' : '<span class="badge lt">HIGH CONFIDENCE</span>'];
+    facts = {Location: p.loc, Photo: p.seen, Confidence: p.conf ? Math.round(p.conf * 100) + '%' : '', Area: p.area};
+    photo = p.crop ? `<div class="photo"><img src="${esc(p.crop)}" alt="Sign photo"><div class="cap">Photo ${esc(p.seen)} · read by our sign model</div></div>` : '';
+  } else if (src === 'mly') {
+    const m = CMAP[p.value] || {}; code = String(m.code || '').split('/')[0]; val = m.val || '';
+    const t = TRUST[code.split('(')[0].trim()] || {trust: 'untested'};
+    const TT = {likely: ['badge lt', 'CODE USUALLY RIGHT'], mixed: ['badge warn', 'CODE SOMETIMES WRONG'], low: ['badge warn', 'CODE OFTEN WRONG'], untested: ['badge warn', 'CODE NOT YET TESTED']};
+    badges = [`<span class="badge" style="--c:${SRC.mly.c}">${SRC.mly.t}</span>`, `<span class="${TT[t.trust][0]}">${TT[t.trust][1]}</span>`];
+    facts = {'First seen': day(p.first_seen_at), 'Last seen': day(p.last_seen_at), Agreement: t.found != null ? `Matched ${Math.round(t.found * 100)}% of ${t.ours} scanned ${code} signs` : '', Detected: String(p.value).replace(/--/g, ' · ').replace(/-/g, ' ')};
+    photo = `<div class="photo" id="ph"><div class="msg">Loading photo…</div></div>`;
+  } else {
+    code = p.code || ''; badges = [`<span class="badge" style="--c:${SRC.county.c}">${SRC.county.t}</span>`, p.status ? `<span class="badge lt">${esc(String(p.status).toUpperCase())}</span>` : ''];
+    facts = {Description: p.desc, Location: p.loc, Facing: p.dir, Date: p.date, Source: p.src};
+    photo = `<div class="photo" id="ph"><div class="msg">Looking for the nearest street photo…</div></div>`;
   }
-  else if (id.startsWith('ag-')) pop(e, `<h3>${esc(p.code || AG[id.slice(3)].label)}</h3>` + rows({Description: esc(p.desc), Location: esc(p.loc), Status: esc(p.status), Date: esc(p.date), Source: esc(p.src)}) + links(lat, lon));
-  else if (id === 'ph-img') pop(e, rows({Photo: day(p.captured_at), Type: p.is_pano ? '360' : 'Flat'}) + links(lat, lon));
-  else if (id === 'tiles-fill') pop(e, `<h3>${esc(p.city)} · P${p.p}</h3>` + rows({'Build order': '#' + p.rank.toLocaleString(), 'Arterial km': p.art, 'All street km': p.loc, Urban: Math.round(p.urban * 100) + '%', 'Jobs + residents': (p.jobs + p.res).toLocaleString()}));
-});
-['fp', 'mly', 'ag-signs', 'ag-markings', 'ag-signals', 'ag-striping', 'tiles-fill'].forEach(id => {
-  map.on('mouseenter', id, () => map.getCanvas().style.cursor = 'pointer'); map.on('mouseleave', id, () => map.getCanvas().style.cursor = '');
-});
+  const k = famKey(code), info = IDX[resolve(k) || k] || IDX[k] || {};
+  const art = info.svg ? `<img src="${SSS}${info.svg}" alt="${esc(code)}">` : `<b>${esc(code)}</b>`;
+  $('#card-body').innerHTML = `<div class="sc-head"><div class="sc-art">${art}</div><div><div class="sc-code">${esc(code || 'No code')}${val ? ` <span style="font-weight:500">(${esc(val)})</span>` : ''}</div>
+    <div class="sc-name">${esc(info.name || '')}</div></div></div><div class="badges">${badges.join('')}</div>${photo}
+    <table class="facts">${Object.entries(facts).filter(([, v]) => v).map(([k_, v]) => `<tr><td>${k_}</td><td>${esc(v)}</td></tr>`).join('')}</table>
+    <div class="links">${info.slug ? `<a href="${SSS}/signs/${info.slug}/" target="_blank" rel="noopener">Standard</a>` : ''}<a href="${sv(lat, lon)}" target="_blank" rel="noopener">Street View</a><a href="${mlyAt(lat, lon)}" target="_blank" rel="noopener">Mapillary</a></div>`;
+  $('#card').hidden = false;
+  if (!map.getSource('sel')) { map.addSource('sel', {type: 'geojson', data: {type: 'FeatureCollection', features: []}});
+    map.addLayer({id: 'sel', type: 'circle', source: 'sel', paint: {'circle-radius': 14, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-color': '#FF6622', 'circle-stroke-width': 3}}); }
+  map.getSource('sel').setData({type: 'Feature', geometry: {type: 'Point', coordinates: [lon, lat]}, properties: {}});
+  if (src === 'mly') mlyPhoto(p.id); if (src === 'county') nearPhoto(lon, lat);
+}
+
+/* Mapillary: newest photo that saw this sign, cropped to the sign with CSS */
+async function mlyPhoto(id) {
+  const box = $('#ph'); if (!box) return;
+  try {
+    const d = (await graph(`${id}/detections`, 'fields=image,geometry')).data || [];
+    if (!d.length) throw 0;
+    const ims = await Promise.all(d.slice(0, 6).map(x => graph(x.image.id, 'fields=thumb_1024_url,captured_at,width,height').then(i => ({i, g: x.geometry}))));
+    const {i, g} = ims.filter(x => x.i.thumb_1024_url).sort((a, b) => b.i.captured_at - a.i.captured_at)[0];
+    const bb = mvtBox(g); const iw = 1024, ih = Math.round(1024 * i.height / i.width);
+    const W = box.clientWidth || 308, H = 170, pad = 2.2;
+    const bw = Math.max(bb[2] - bb[0], 0.01) * iw * pad, bh = Math.max(bb[3] - bb[1], 0.01) * ih * pad;
+    const s = Math.min(W / bw, H / bh, 3), cx = (bb[0] + bb[2]) / 2 * iw * s, cy = (bb[1] + bb[3]) / 2 * ih * s;
+    box.innerHTML = `<a href="${esc(i.thumb_1024_url)}" target="_blank" rel="noopener"><div class="crop" style="background-image:url('${i.thumb_1024_url}');background-size:${iw * s}px ${ih * s}px;background-position:${W / 2 - cx}px ${H / 2 - cy}px"></div></a>
+      <div class="cap">Photo ${day(i.captured_at)} · ${d.length} photo${d.length > 1 ? 's' : ''} saw this sign · tap for the full photo</div>`;
+  } catch (e) { box.innerHTML = '<div class="msg">No photo available for this detection</div>'; }
+}
+/* County records carry no photo: show the nearest street photo */
+async function nearPhoto(lon, lat) {
+  const box = $('#ph'); if (!box) return; const r = 0.00025;
+  try {
+    const d = (await graph('images', `fields=thumb_1024_url,captured_at&limit=10&bbox=${lon - r},${lat - r},${lon + r},${lat + r}`)).data || [];
+    const i = d.sort((a, b) => b.captured_at - a.captured_at)[0]; if (!i) throw 0;
+    box.innerHTML = `<a href="${esc(i.thumb_1024_url)}" target="_blank" rel="noopener"><img src="${esc(i.thumb_1024_url)}" alt="Nearest street photo"></a><div class="cap">Nearest street photo, ${day(i.captured_at)} (not matched to this record)</div>`;
+  } catch (e) { box.innerHTML = '<div class="msg">No street photo within 25 m</div>'; }
+}
+/* bounding box (0-1) of a Mapillary detection geometry: base64 vector tile with one feature */
+function mvtBox(b64) {
+  const u = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); let ext = 4096, pts = [];
+  const rd = (b, o) => { let v = 0, s = 0, c; do { c = b[o.i++]; v += (c & 0x7f) * 2 ** s; s += 7; } while (c & 0x80); return v; };
+  const walk = (b, fn) => { const o = {i: 0}; while (o.i < b.length) { const t = rd(b, o), f = t >>> 3, w = t & 7;
+    if (w === 2) { const n = rd(b, o); fn(f, b.subarray(o.i, o.i + n)); o.i += n; } else if (w === 0) fn(f, rd(b, o)); else if (w === 5) o.i += 4; else if (w === 1) o.i += 8; } };
+  walk(u, (f, layer) => { if (f !== 3) return; walk(layer, (lf, v) => { if (lf === 5) ext = v; if (lf !== 2) return; walk(v, (ff, g) => { if (ff !== 4) return;
+    const o = {i: 0}; let x = 0, y = 0; while (o.i < g.length) { const c = rd(g, o), id = c & 7, n = c >>> 3; if (id === 7) continue;
+      for (let k = 0; k < n; k++) { const dx = rd(g, o), dy = rd(g, o); x += (dx >>> 1) ^ -(dx & 1); y += (dy >>> 1) ^ -(dy & 1); pts.push([x, y]); } } }); }); });
+  if (!pts.length) return [0.4, 0.4, 0.6, 0.6];
+  const xs = pts.map(p => p[0] / ext), ys = pts.map(p => p[1] / ext);
+  return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+}
