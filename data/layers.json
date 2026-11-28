@@ -1,0 +1,900 @@
+{
+  "version": 1,
+  "since": "2021-01-01",
+  "rules": {
+    "observed": "Counts, surveys and photos: every record dated 2021-01-01 or later; older or undated records are dropped.",
+    "inventory": "Current agency inventories and rules: kept when the agency's last update is 2021 or later; the update date shows on every record."
+  },
+  "groups": [
+    {
+      "id": "volumes",
+      "title": "Traffic volumes",
+      "color": "#00574A"
+    },
+    {
+      "id": "speeds",
+      "title": "85th percentile speeds",
+      "color": "#FF6622"
+    },
+    {
+      "id": "active",
+      "title": "Walk and bike counts",
+      "color": "#1B795A"
+    },
+    {
+      "id": "parking",
+      "title": "Parking",
+      "color": "#568CBB"
+    }
+  ],
+  "layers": [
+    {
+      "id": "caltrans_aadt",
+      "group": "volumes",
+      "title": "State highway AADT (Caltrans)",
+      "kind": "observed",
+      "geom": "point",
+      "source": {
+        "name": "Caltrans Traffic Census, Traffic Volumes AADT",
+        "agency": "Caltrans",
+        "url": "https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/Traffic_AADT/FeatureServer/0",
+        "license": "Public, State of California"
+      },
+      "fetch": {
+        "type": "arcgis",
+        "url": "https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/Traffic_AADT/FeatureServer/0",
+        "where": "CNTY='LA'"
+      },
+      "date": {
+        "fixed": "2023"
+      },
+      "map": {
+        "route": "RTE",
+        "pm": "PM",
+        "desc": "DESCRIPTION",
+        "aadt_back": "BACK_AADT",
+        "aadt_ahead": "AHEAD_AADT",
+        "peak_hour_back": "BACK_PEAK_HOUR",
+        "peak_hour_ahead": "AHEAD_PEAK_HOUR",
+        "peak_month_back": "BACK_PEAK_MADT",
+        "peak_month_ahead": "AHEAD_PEAK_MADT"
+      },
+      "hook": "caltrans_aadt",
+      "style": {
+        "metric": "aadt",
+        "stops": [
+          [
+            0,
+            3
+          ],
+          [
+            50000,
+            5
+          ],
+          [
+            300000,
+            9
+          ]
+        ],
+        "label": "{aadt_k}"
+      },
+      "card": {
+        "title": "Route {route} at PM {pm}",
+        "sub": "{desc}",
+        "fields": [
+          [
+            "AADT, back leg",
+            "aadt_back",
+            "num"
+          ],
+          [
+            "AADT, ahead leg",
+            "aadt_ahead",
+            "num"
+          ],
+          [
+            "Peak hour, back / ahead",
+            "peak_hour",
+            "text"
+          ],
+          [
+            "Peak month ADT, back / ahead",
+            "peak_month",
+            "text"
+          ],
+          [
+            "Count year",
+            "year",
+            "text"
+          ]
+        ],
+        "note": "Annual average daily traffic, both directions. Back leg is usually south or west of the point, ahead leg north or east. No weekday or weekend split is published."
+      }
+    },
+    {
+      "id": "lacounty_adt",
+      "group": "volumes",
+      "title": "County traffic counts (LA County Public Works)",
+      "kind": "observed",
+      "geom": "point",
+      "source": {
+        "name": "LA County Traffic Count (PW Open Data)",
+        "agency": "LA County Public Works",
+        "url": "https://dpw.gis.lacounty.gov/dpw/rest/services/PW_Open_Data/MapServer/59",
+        "license": "LA County open data"
+      },
+      "fetch": {
+        "type": "arcgis",
+        "url": "https://dpw.gis.lacounty.gov/dpw/rest/services/PW_Open_Data/MapServer/59",
+        "where": "1=1"
+      },
+      "hook": "lacounty_adt",
+      "style": {
+        "metric": "adt",
+        "stops": [
+          [
+            0,
+            3
+          ],
+          [
+            10000,
+            5
+          ],
+          [
+            60000,
+            9
+          ]
+        ],
+        "label": "{adt_k}"
+      },
+      "card": {
+        "title": "{street}",
+        "sub": "{location}",
+        "fields": [
+          [
+            "24-hour ADT",
+            "adt",
+            "num"
+          ],
+          [
+            "Weekday or weekend",
+            "daytype",
+            "text"
+          ],
+          [
+            "AM peak",
+            "am_peak",
+            "num"
+          ],
+          [
+            "PM peak",
+            "pm_peak",
+            "num"
+          ],
+          [
+            "Count date",
+            "date",
+            "text"
+          ]
+        ],
+        "note": "24-hour count on the date shown; not seasonally adjusted."
+      }
+    },
+    {
+      "id": "glendale_adt",
+      "group": "volumes",
+      "title": "Glendale ADT, 2024 existing",
+      "kind": "observed",
+      "geom": "line",
+      "source": {
+        "name": "Glendale ADT Segments (existing 2024 column only)",
+        "agency": "City of Glendale (consultant-published)",
+        "url": "https://services.arcgis.com/4qIOeADCgonipFEW/arcgis/rest/services/Glendale_ADT_Segments/FeatureServer/15",
+        "license": "Public ArcGIS layer"
+      },
+      "fetch": {
+        "type": "arcgis",
+        "url": "https://services.arcgis.com/4qIOeADCgonipFEW/arcgis/rest/services/Glendale_ADT_Segments/FeatureServer/15",
+        "where": "1=1"
+      },
+      "date": {
+        "fixed": "2024"
+      },
+      "map": {
+        "street": "Corridor",
+        "from": "From_",
+        "to": "To_",
+        "class": "Class",
+        "adt": "Existing2024"
+      },
+      "style": {
+        "metric": "adt",
+        "stops": [
+          [
+            0,
+            1.5
+          ],
+          [
+            10000,
+            3
+          ],
+          [
+            40000,
+            6
+          ]
+        ],
+        "label": "{adt_k}"
+      },
+      "card": {
+        "title": "{street}",
+        "sub": "{from} to {to}",
+        "fields": [
+          [
+            "ADT, 2024",
+            "adt",
+            "num"
+          ],
+          [
+            "Street class",
+            "class",
+            "text"
+          ]
+        ],
+        "note": "Existing 2024 daily volume. The layer's 2034 and 2045 forecasts are left out."
+      }
+    },
+    {
+      "id": "speed_surveys",
+      "group": "speeds",
+      "title": "85th percentile speeds (E&TS reports)",
+      "kind": "observed",
+      "geom": "line",
+      "source": {
+        "name": "City Engineering and Traffic Survey reports",
+        "agency": "Each city (listed per record)",
+        "url": "data/sources/speed_surveys.json",
+        "license": "Public records"
+      },
+      "hook": "speed_surveys",
+      "style": {
+        "metric": "p85",
+        "stops": [
+          [
+            20,
+            2
+          ],
+          [
+            35,
+            3.5
+          ],
+          [
+            55,
+            6
+          ]
+        ],
+        "label": "{p85} mph"
+      },
+      "card": {
+        "title": "{street}",
+        "sub": "{from} to {to}",
+        "fields": [
+          [
+            "85th percentile",
+            "p85",
+            "mph"
+          ],
+          [
+            "50th percentile",
+            "p50",
+            "mph"
+          ],
+          [
+            "Posted limit",
+            "posted",
+            "mph"
+          ],
+          [
+            "Daily volume",
+            "adt",
+            "num"
+          ],
+          [
+            "Survey",
+            "report",
+            "text"
+          ],
+          [
+            "Year",
+            "year",
+            "text"
+          ]
+        ],
+        "note": "Read from the report's summary table; page {page}. Location matched by street and limits ({how})."
+      }
+    },
+    {
+      "id": "ladot_walkbike",
+      "group": "active",
+      "title": "LADOT Walk & Bike Count",
+      "kind": "observed",
+      "geom": "point",
+      "source": {
+        "name": "LADOT Walk & Bike Count 2021, 2023, 2025",
+        "agency": "LADOT",
+        "url": "https://data.lacity.org/d/hiwe-xzrt",
+        "license": "Los Angeles Open Data"
+      },
+      "hook": "ladot_walkbike",
+      "style": {
+        "metric": "total",
+        "stops": [
+          [
+            0,
+            4
+          ],
+          [
+            1000,
+            6
+          ],
+          [
+            8000,
+            11
+          ]
+        ],
+        "label": "{total}"
+      },
+      "card": {
+        "title": "{street}",
+        "sub": "{from} to {to}",
+        "fields": [
+          [
+            "Walking, weekday",
+            "ped_weekday",
+            "num"
+          ],
+          [
+            "Walking, weekend",
+            "ped_weekend",
+            "num"
+          ],
+          [
+            "Biking, weekday",
+            "bike_weekday",
+            "num"
+          ],
+          [
+            "Biking, weekend",
+            "bike_weekend",
+            "num"
+          ],
+          [
+            "Scooter, weekday / weekend",
+            "scooter",
+            "text"
+          ],
+          [
+            "Facility",
+            "facility",
+            "text"
+          ],
+          [
+            "Count year",
+            "year",
+            "text"
+          ]
+        ],
+        "note": "Fall count over the count periods of one weekday and one weekend day. Location matched by street and limits ({how})."
+      }
+    },
+    {
+      "id": "ladot_meters",
+      "group": "parking",
+      "title": "Metered spaces, City of LA",
+      "kind": "inventory",
+      "geom": "point",
+      "source": {
+        "name": "LADOT Metered Parking Inventory & Policies",
+        "agency": "LADOT",
+        "url": "https://data.lacity.org/d/s49e-q6j2",
+        "license": "Los Angeles Open Data"
+      },
+      "fetch": {
+        "type": "socrata",
+        "domain": "data.lacity.org",
+        "id": "s49e-q6j2"
+      },
+      "hook": "ladot_meters",
+      "style": {
+        "minzoom": 13,
+        "stops": [
+          [
+            0,
+            3.5
+          ]
+        ],
+        "label": "{rate}"
+      },
+      "card": {
+        "title": "{blockface}",
+        "sub": "Space {space}",
+        "fields": [
+          [
+            "Rate",
+            "rate",
+            "text"
+          ],
+          [
+            "Rate type",
+            "ratetype",
+            "text"
+          ],
+          [
+            "Time limit",
+            "timelimit",
+            "text"
+          ],
+          [
+            "Meter",
+            "metertype",
+            "text"
+          ],
+          [
+            "Inventory date",
+            "date",
+            "text"
+          ]
+        ],
+        "live": "ladot_occupancy",
+        "note": "Posted signs govern where they differ from this inventory."
+      }
+    },
+    {
+      "id": "smgov_meters",
+      "group": "parking",
+      "title": "Parking meters, Santa Monica",
+      "kind": "inventory",
+      "geom": "point",
+      "source": {
+        "name": "Parking Meters Updates 2026",
+        "agency": "City of Santa Monica",
+        "url": "https://gis.santamonica.gov/server/rest/services/Parking_Meters_Updates_2026/MapServer/1",
+        "license": "Santa Monica open data"
+      },
+      "fetch": {
+        "type": "arcgis",
+        "url": "https://gis.santamonica.gov/server/rest/services/Parking_Meters_Updates_2026/MapServer/1",
+        "where": "1=1"
+      },
+      "date": {
+        "fixed": "2026"
+      },
+      "map": {
+        "pole": "pole",
+        "zone": "zone",
+        "area": "area_pm",
+        "meter_type": "meter_type",
+        "status": "pole_status",
+        "address": "street_address",
+        "side": "street_side"
+      },
+      "style": {
+        "minzoom": 13,
+        "stops": [
+          [
+            0,
+            3.5
+          ]
+        ]
+      },
+      "card": {
+        "title": "{address}",
+        "sub": "Pole {pole}",
+        "fields": [
+          [
+            "Zone",
+            "zone",
+            "text"
+          ],
+          [
+            "Area",
+            "area",
+            "text"
+          ],
+          [
+            "Meter",
+            "meter_type",
+            "text"
+          ],
+          [
+            "Status",
+            "status",
+            "text"
+          ],
+          [
+            "Side",
+            "side",
+            "text"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "pasadena_meters",
+      "group": "parking",
+      "title": "Parking meters, Pasadena",
+      "kind": "inventory",
+      "geom": "point",
+      "source": {
+        "name": "Parking Meters",
+        "agency": "City of Pasadena",
+        "url": "https://services2.arcgis.com/zNjnZafDYCAJAbN0/arcgis/rest/services/Parking_Meters/FeatureServer/0",
+        "license": "Pasadena open data"
+      },
+      "fetch": {
+        "type": "arcgis",
+        "url": "https://services2.arcgis.com/zNjnZafDYCAJAbN0/arcgis/rest/services/Parking_Meters/FeatureServer/0",
+        "where": "1=1"
+      },
+      "date": {
+        "field": "last_edited_date",
+        "fmt": "epoch_ms"
+      },
+      "map": {
+        "meter": "METER_NUMBER",
+        "district": "DISTRICT",
+        "days": "DAYS_OF_OPERATION",
+        "rate": "HOURLY_RATE",
+        "max_hr": "MAX_TIME",
+        "hours": "HOURS_OF_OPERATION",
+        "meter_type": "TYPE_OF_METER",
+        "spaces": "TOTAL_SPACES",
+        "status": "Meter_Status"
+      },
+      "style": {
+        "minzoom": 13,
+        "stops": [
+          [
+            0,
+            3.5
+          ]
+        ]
+      },
+      "card": {
+        "title": "Meter {meter}",
+        "sub": "District {district}",
+        "fields": [
+          [
+            "Rate per hour",
+            "rate",
+            "money"
+          ],
+          [
+            "Time limit, hours",
+            "max_hr",
+            "text"
+          ],
+          [
+            "Days",
+            "days",
+            "text"
+          ],
+          [
+            "Hours",
+            "hours",
+            "text"
+          ],
+          [
+            "Spaces",
+            "spaces",
+            "text"
+          ],
+          [
+            "Meter",
+            "meter_type",
+            "text"
+          ],
+          [
+            "Last update",
+            "date",
+            "text"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "pasadena_meter_districts",
+      "group": "parking",
+      "title": "Meter districts, Pasadena",
+      "kind": "inventory",
+      "geom": "polygon",
+      "source": {
+        "name": "Parking Meter Districts",
+        "agency": "City of Pasadena",
+        "url": "https://services2.arcgis.com/zNjnZafDYCAJAbN0/arcgis/rest/services/Parking_Meter_Districts/FeatureServer/1",
+        "license": "Pasadena open data"
+      },
+      "fetch": {
+        "type": "arcgis",
+        "url": "https://services2.arcgis.com/zNjnZafDYCAJAbN0/arcgis/rest/services/Parking_Meter_Districts/FeatureServer/1",
+        "where": "1=1"
+      },
+      "date": {
+        "edit": true
+      },
+      "map": {
+        "name": "Parking_Meter_District",
+        "hours": "Hours_of_Operation",
+        "rate": "Rate",
+        "limits": "Time_Limits"
+      },
+      "style": {},
+      "card": {
+        "title": "{name}",
+        "sub": "Meter district",
+        "fields": [
+          [
+            "Hours",
+            "hours",
+            "text"
+          ],
+          [
+            "Rate",
+            "rate",
+            "text"
+          ],
+          [
+            "Time limits",
+            "limits",
+            "text"
+          ],
+          [
+            "Last update",
+            "date",
+            "text"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "smgov_preferential",
+      "group": "parking",
+      "title": "Preferential parking, Santa Monica",
+      "kind": "inventory",
+      "geom": "line",
+      "source": {
+        "name": "Preferential Parking",
+        "agency": "City of Santa Monica",
+        "url": "https://gis.santamonica.gov/server/rest/services/Preferential_Parking/MapServer/0",
+        "license": "Santa Monica open data"
+      },
+      "fetch": {
+        "type": "arcgis",
+        "url": "https://gis.santamonica.gov/server/rest/services/Preferential_Parking/MapServer/0",
+        "where": "1=1"
+      },
+      "date": {
+        "field": "editdate",
+        "fmt": "epoch_ms",
+        "layer_max": true
+      },
+      "map": {
+        "street": "fullname",
+        "from": "st_from",
+        "to": "st_to",
+        "status": "status",
+        "zone": "zone",
+        "rule": "rule_",
+        "adopted": "adpt_date",
+        "enforced": "enf_date"
+      },
+      "style": {},
+      "card": {
+        "title": "{street}",
+        "sub": "{from} to {to}",
+        "fields": [
+          [
+            "Zone",
+            "zone",
+            "text"
+          ],
+          [
+            "Rule",
+            "rule",
+            "text"
+          ],
+          [
+            "Status",
+            "status",
+            "text"
+          ],
+          [
+            "Adopted",
+            "adopted",
+            "date"
+          ],
+          [
+            "Enforced",
+            "enforced",
+            "date"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "sweeping_la",
+      "group": "parking",
+      "title": "Posted street sweeping, City of LA",
+      "kind": "inventory",
+      "geom": "polygon",
+      "source": {
+        "name": "Posted Street Sweeping Routes",
+        "agency": "LA Sanitation",
+        "url": "https://services1.arcgis.com/PTh9WC0Sf2WS7AAq/arcgis/rest/services/Posted_Street_Sweeping_Routes_Update/FeatureServer/0",
+        "license": "Public ArcGIS layer"
+      },
+      "fetch": {
+        "type": "arcgis",
+        "url": "https://services1.arcgis.com/PTh9WC0Sf2WS7AAq/arcgis/rest/services/Posted_Street_Sweeping_Routes_Update/FeatureServer/0",
+        "where": "1=1"
+      },
+      "date": {
+        "edit": true
+      },
+      "map": {
+        "route": "Route",
+        "time": "Posted_Time",
+        "day": "Posted_Day",
+        "weeks": "Weeks_Number",
+        "bounds": "Boundaries"
+      },
+      "style": {},
+      "card": {
+        "title": "Sweeping {day}, {time}",
+        "sub": "Route {route}",
+        "fields": [
+          [
+            "Weeks",
+            "weeks",
+            "text"
+          ],
+          [
+            "Route limits",
+            "bounds",
+            "text"
+          ],
+          [
+            "Last update",
+            "date",
+            "text"
+          ]
+        ],
+        "note": "No parking during the posted time on the posted days."
+      }
+    },
+    {
+      "id": "sweeping_county",
+      "group": "parking",
+      "title": "Street sweeping, unincorporated county",
+      "kind": "inventory",
+      "geom": "line",
+      "source": {
+        "name": "Road Maintenance Division Street Sweeping Routes",
+        "agency": "LA County Public Works",
+        "url": "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Los_Angeles_County_Public_Works_Road_Maintenance_Division_Street_Sweeping_Routes/FeatureServer/0",
+        "license": "LA County open data"
+      },
+      "fetch": {
+        "type": "arcgis",
+        "url": "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Los_Angeles_County_Public_Works_Road_Maintenance_Division_Street_Sweeping_Routes/FeatureServer/0",
+        "where": "1=1"
+      },
+      "date": {
+        "edit": true
+      },
+      "map": {
+        "day": "SCHEDULE",
+        "time": "TIME",
+        "posted": "POSTED",
+        "freq": "FREQUENCY",
+        "street_type": "STREET_TYPE",
+        "route": "ROUTE_NUMBER"
+      },
+      "style": {
+        "minzoom": 12
+      },
+      "card": {
+        "title": "Sweeping {day}, {time}",
+        "sub": "{freq}",
+        "fields": [
+          [
+            "Posted",
+            "posted",
+            "text"
+          ],
+          [
+            "Street type",
+            "street_type",
+            "text"
+          ],
+          [
+            "Route",
+            "route",
+            "text"
+          ],
+          [
+            "Last update",
+            "date",
+            "text"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "sweeping_longbeach",
+      "group": "parking",
+      "title": "Street sweeping, Long Beach",
+      "kind": "inventory",
+      "geom": "polygon",
+      "source": {
+        "name": "Street Sweeping",
+        "agency": "City of Long Beach",
+        "url": "https://services6.arcgis.com/yCArG7wGXGyWLqav/arcgis/rest/services/Street_Sweeping/FeatureServer/0",
+        "license": "Long Beach open data"
+      },
+      "fetch": {
+        "type": "arcgis",
+        "url": "https://services6.arcgis.com/yCArG7wGXGyWLqav/arcgis/rest/services/Street_Sweeping/FeatureServer/0",
+        "where": "1=1"
+      },
+      "date": {
+        "edit": true
+      },
+      "map": {
+        "time": "HOUR",
+        "day": "DAYS"
+      },
+      "style": {},
+      "card": {
+        "title": "Sweeping {day}, {time}",
+        "sub": "Long Beach",
+        "fields": [
+          [
+            "Last update",
+            "date",
+            "text"
+          ]
+        ]
+      }
+    }
+  ],
+  "left_out": [
+    {
+      "name": "LADOT Traffic Counts Summary (data.lacity.org 94wu-3ps3)",
+      "why": "Last updated November 2020, before the date limit. Newer City of LA counts are only in NavigateLA."
+    },
+    {
+      "name": "LADOT 2019 Walk & Bike Count",
+      "why": "2019, before the date limit."
+    },
+    {
+      "name": "LADOT Preferential and Overnight Parking Districts (2015 maps)",
+      "why": "Last updated 2015."
+    },
+    {
+      "name": "Pasadena Parking Signs, Pasadena street sweeping",
+      "why": "Last updated 2019 and 2018."
+    },
+    {
+      "name": "Santa Monica posted speed limits, Glendale 2034 and 2045 forecasts",
+      "why": "Not 85th percentile speeds or existing counts."
+    },
+    {
+      "name": "LADOT Parking Meter Occupancy archive",
+      "why": "Monthly files over 300 MB each; live occupancy is shown on each LADOT meter card instead."
+    },
+    {
+      "name": "\"Parking Permit\" layer found under Lancaster",
+      "why": "It maps Lancaster, Pennsylvania; the build's county-boundary check caught it."
+    }
+  ]
+}

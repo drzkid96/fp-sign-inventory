@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DATA SOURCES AND DOWNLOADS · LA COUNTY STREET INVENTORY</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{--slate:#00242E;--emerald:#00574A;--jade:#1B795A;--lg:#6BD688;--pale:#D9F1D6;--cream:#EEEDE8;--band:#F2F2F2;--mute:#5b7278}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Albert Sans',sans-serif;color:var(--slate);background:var(--cream);-webkit-font-smoothing:antialiased}
+header{background:var(--slate);color:#fff;padding:22px 28px}
+header h1{margin:0;font-size:22px;font-weight:600;letter-spacing:.3px}
+header p{margin:6px 0 0;color:var(--lg);font-size:13.5px;font-weight:500}
+header a{color:#fff}
+main{max-width:1180px;margin:0 auto;padding:20px 20px 40px}
+section{background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,36,46,.08);padding:18px 20px;margin:0 0 16px}
+h2{font-size:12px;font-weight:700;letter-spacing:1px;color:var(--emerald);margin:0 0 10px}
+p,li{font-size:13px;line-height:1.5}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{background:var(--emerald);color:#fff;font-weight:700;text-align:left;padding:8px 10px;vertical-align:middle}
+td{padding:8px 10px;border-bottom:1px solid var(--cream);vertical-align:middle}
+tr:nth-child(even) td{background:var(--band)}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td small{color:var(--mute)}
+a{color:var(--jade)}
+.dl a{white-space:nowrap}
+.g{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.err{color:#a33d0d}
+code{background:var(--band);padding:1px 5px;border-radius:4px;font-size:12px}
+:target td{background:var(--pale)!important}
+</style>
+</head>
+<body>
+<header>
+  <h1>DATA SOURCES AND DOWNLOADS</h1>
+  <p>LA County street inventory · <a href="index.html">Back to the map</a></p>
+</header>
+<main>
+  <section>
+    <h2>HOW THE DATA IS KEPT</h2>
+    <p id="rules"></p>
+    <p>Every layer is rebuilt nightly from its source. Each one downloads as GeoJSON, CSV, KMZ (Google Earth), GeoPackage, shapefile and DXF in CA State Plane Zone 5 (US ft) for CAD. All layers in one GeoPackage, State Plane Zone 5: <a id="all" href="#">all-layers-2229.gpkg</a>.</p>
+    <p>For other tools: the layer list is <a href="data/layers.json">data/layers.json</a> and the build results are <a href="data/layers/index.json">data/layers/index.json</a>; map tiles are PMTiles under <code>data/layers/</code>.</p>
+  </section>
+  <section>
+    <h2>LAYERS</h2>
+    <table><thead><tr><th>Layer</th><th>Source</th><th>Records</th><th>Dates</th><th>Left out</th><th>Downloads</th></tr></thead><tbody id="rows"></tbody></table>
+  </section>
+  <section id="speed-reports">
+    <h2>SPEED SURVEY REPORTS</h2>
+    <p>85th percentile speeds come from city Engineering and Traffic Survey reports. Where a city website refuses the download, the PDF can go in <code>inputs/speed-surveys/</code> named <code>YYYY_City_anything.pdf</code>; the next build reads it.</p>
+    <table><thead><tr><th>Report</th><th>Segments read</th><th>Placed on the map</th><th>Status</th></tr></thead><tbody id="reports"></tbody></table>
+  </section>
+  <section>
+    <h2>LEFT OUT</h2>
+    <table><thead><tr><th>Data</th><th>Why</th></tr></thead><tbody id="out"></tbody></table>
+  </section>
+</main>
+<script>
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+Promise.all([fetch('data/layers.json').then(r => r.json()), fetch('data/layers/index.json').then(r => r.ok ? r.json() : {}).catch(() => ({}))]).then(([R, I]) => {
+  document.getElementById('rules').textContent = `Date limit: ${R.since}. ${R.rules.observed} ${R.rules.inventory}`;
+  const rel = 'https://github.com/drzkid96/fp-sign-inventory/releases/download/data-latest/'; document.getElementById('all').href = rel + 'all-layers-2229.gpkg';
+  const col = Object.fromEntries(R.groups.map(g => [g.id, g]));
+  document.getElementById('rows').innerHTML = R.layers.map(l => { const s = I[l.id] || {}, d = s.dropped || {};
+    const lo = Object.entries(d).filter(([, v]) => v).map(([k, v]) => `${v.toLocaleString()} ${k.replace(/_/g, ' ')}`).join(', ');
+    const dates = s.as_of ? `updated ${s.as_of}` : Object.entries(s.years || {}).map(([y, n]) => `${y}: ${n.toLocaleString()}`).join(', ');
+    const st = s.error ? `<span class="err">Build failed: ${esc(s.error)}</span>` : s.skipped ? `<span class="err">${esc(s.skipped)}</span>` : !s.count ? '<small>Not built yet</small>' : '';
+    return `<tr id="${l.id}"><td><span class="g" style="background:${col[l.group].color}"></span><b>${esc(l.title)}</b><br><small>${esc(col[l.group].title)} · ${l.kind}</small></td>
+      <td>${esc(l.source.agency)}<br><small>${/^https?:/.test(l.source.url) ? `<a href="${esc(l.source.url)}">${esc(l.source.name)}</a>` : esc(l.source.name)}</small></td>
+      <td class="n">${s.count ? s.count.toLocaleString() : '-'}</td><td><small>${esc(dates)}</small>${st ? '<br>' + st : ''}</td><td><small>${esc(lo)}</small></td>
+      <td class="dl"><small>${Object.entries(s.files || {}).map(([k, u]) => `<a href="${esc(u)}">${esc(k)}</a>`).join(' · ')}</small></td></tr>`; }).join('');
+  const reps = (I.speed_surveys || {}).reports || [];
+  document.getElementById('reports').innerHTML = reps.length ? reps.map(r => `<tr><td>${r.url ? `<a href="${esc(r.url)}">${esc(r.city)} ${r.year}</a>` : esc(r.city + ' ' + r.year)}<br><small>${esc(r.title)}</small></td>
+    <td class="n">${r.rows ?? '-'}</td><td class="n">${r.located ?? '-'}</td><td>${r.error ? `<span class="err">${esc(r.error)}</span>` : 'Read'}</td></tr>`).join('') : '<tr><td colspan="4"><small>Not built yet</small></td></tr>';
+  document.getElementById('out').innerHTML = R.left_out.map(o => `<tr><td>${esc(o.name)}</td><td>${esc(o.why)}</td></tr>`).join('');
+  if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
+});
+</script>
+</body>
+</html>

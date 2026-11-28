@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="css/map.css?v=5">
+<link rel="stylesheet" href="css/map.css?v=6">
 </head>
 <body>
 <div id="map"></div>
@@ -35,6 +35,10 @@
       <dt><i style="--c:#00242E"></i>County records</dt><dd id="county-dd">LA County Public Works sign inventory (unincorporated areas).</dd>
     </dl>
 
+    <h2>DATA <a class="h2link" href="data.html">Sources and downloads</a></h2>
+    <div id="data-groups"><p class="foot">Loading layers…</p></div>
+    <label class="since">Show data from <select id="since"></select> on</label>
+
     <h2>MAP</h2>
     <div class="chips">
       <button data-layer="tiles" class="on"><i class="sq" style="--c:#1B795A"></i>Build order</button>
@@ -45,7 +49,7 @@
     <div class="ramp" id="ramp-photos" hidden></div>
     <div class="seg"><button data-base="map" class="on">MAP</button><button data-base="aerial">AERIAL</button></div>
 
-    <p class="foot">Sources: Mapillary (CC BY-SA), LA County Public Works, OpenStreetMap contributors, US Census. <a href="PLAN.md">Plan</a> · <a href="areas.html">Area tool</a></p>
+    <p class="foot">Sources: Mapillary (CC BY-SA), LA County Public Works, OpenStreetMap contributors, US Census. <a href="data.html">Data sources</a> · <a href="PLAN.md">Plan</a> · <a href="areas.html">Area tool</a></p>
   </div>
 </aside>
 
@@ -59,6 +63,7 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"></script>
 <script src="js/config.js?v=2"></script>
-<script src="js/map.js?v=11"></script>
+<script src="js/map.js?v=12"></script>
+<script src="js/layers.js?v=1"></script>
 </body>
 </html>

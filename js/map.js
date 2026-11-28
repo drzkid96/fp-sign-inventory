@@ -6,8 +6,8 @@ const SSS = 'https://drzkid96.github.io/SoCal-Super-Standards';
 const SRC = {fp: {c: '#1B795A', t: 'Scanned'}, county: {c: '#00242E', t: 'County record'}, mly: {c: '#568CBB', t: 'Mapillary'}};
 const ORDER = ['fp', 'county', 'mly'];
 const P_COL = ['#00574A', '#1B795A', '#6BD688', '#B9E6B4', '#E4EFE2'];
-const Y_BRK = [[0, '#C9D3D5', '<2018'], [2018, '#9FB3B8', '18-19'], [2020, '#6BD688', '20-21'], [2022, '#1B795A', '22-23'], [2024, '#00242E', '2024+']];
-const MERGE_M = 12, ICON_Z = 15.5;
+const Y_BRK = [[0, '#9FB3B8', '2021'], [2022, '#6BD688', '2022'], [2023, '#1B795A', '2023-24'], [2025, '#00242E', '2025+']];
+const MERGE_M = 12, ICON_Z = 15.5, SINCE = Date.UTC(2021, 0, 1), SINCE_ISO = '2021-01-01T00:00:00Z';   // data before 2021 is not shown
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 const day = ms => ms ? new Date(+ms).toISOString().slice(0, 10) : '';
 const keyOf = c => String(c || '').toLowerCase().replace(/[() ]/g, '');
@@ -85,7 +85,7 @@ map.on('load', async () => {
   const [tiles, idx, cmap, trust, agency, fp, cc] = await Promise.all([get('data/base/tiles.geojson', {features: []}), get('assets/signs/index.json', {}),
     get('data/classmap.json', {}), get('data/base/trust.json', {codes: {}}), get('data/base/agency.json', null), get('data/base/fp.geojson', {features: []}), get('assets/signs/county-codes.json', {})]);
   IDX = idx; CMAP = cmap; TRUST = trust.codes || {}; CC = cc;
-  FP = fp.features.filter(f => !f.properties.name);
+  FP = fp.features.filter(f => !f.properties.name && (Date.parse(f.properties.seen) || 0) >= SINCE);
 
   // aerial sits under the street names
   const firstLabel = map.getStyle().layers.find(l => l.type === 'symbol')?.id;
@@ -102,7 +102,7 @@ map.on('load', async () => {
   // photo years
   const yearX = ['step', ['to-number', ['get', 'captured_at'], 0], Y_BRK[0][1]].concat(Y_BRK.slice(1).flatMap(([y, c]) => [Date.UTC(y, 0, 1), c]));
   map.addSource('mlycov', {type: 'vector', tiles: [`https://tiles.mapillary.com/maps/vtp/mly1_public/2/{z}/{x}/{y}?access_token=${C.MLY}`], minzoom: 6, maxzoom: 14, attribution: 'Photos © Mapillary'});
-  map.addLayer({id: 'ph-seq', type: 'line', source: 'mlycov', 'source-layer': 'sequence', minzoom: 11, layout: {visibility: 'none', 'line-cap': 'round'},
+  map.addLayer({id: 'ph-seq', type: 'line', source: 'mlycov', 'source-layer': 'sequence', minzoom: 11, filter: ['>=', ['to-number', ['get', 'captured_at'], 0], SINCE], layout: {visibility: 'none', 'line-cap': 'round'},
     paint: {'line-color': yearX, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 17, 4], 'line-opacity': 0.85}}, firstLabel);
 
   // raw sources: dots when zoomed out; invisible but loaded close in, where the merged layer takes over
@@ -121,7 +121,7 @@ map.on('load', async () => {
   if (!nSig) document.querySelector('[data-layer="signals"]').disabled = true;
   const vals = Object.keys(CMAP).filter(v => famKey(CMAP[v].code));
   map.addSource('mlysign', {type: 'vector', tiles: [`https://tiles.mapillary.com/maps/vtp/mly_map_feature_traffic_sign/2/{z}/{x}/{y}?access_token=${C.MLY}`], minzoom: 14, maxzoom: 14});
-  dot('mly', 'mlysign', {'source-layer': 'traffic_sign', minzoom: 14, filter: ['in', ['get', 'value'], ['literal', vals]]}, 0.8);
+  dot('mly', 'mlysign', {'source-layer': 'traffic_sign', minzoom: 14, filter: ['all', ['in', ['get', 'value'], ['literal', vals]], ['>=', ['to-number', ['get', 'last_seen_at'], 0], SINCE]]}, 0.8);
   map.addSource('fp', {type: 'geojson', data: {type: 'FeatureCollection', features: FP}});
   dot('fp', 'fp', {});
 
@@ -173,7 +173,7 @@ function merge() {
       const p = f.properties, k = p.key || keyOf(p.code), v = (String(p.desc || '').match(/(\d{2})\s*MPH|LIMIT\s*(\d{2})/i) || []).slice(1).find(Boolean);
       recs.push({src: 'county', ll, fam: k, face: faceKey(k, v), p, op: 1}); }
     if (on('mly') && map.getSource('mlysign')) for (const f of map.querySourceFeatures('mlysign', {sourceLayer: 'traffic_sign'})) { const ll = f.geometry.coordinates; if (!inView(ll)) continue;
-      const m = CMAP[f.properties.value]; if (!m) continue; const k = famKey(m.code); if (!k) continue; const t = trustOf(m.code).trust;
+      const m = CMAP[f.properties.value]; if (!m || +f.properties.last_seen_at < SINCE) continue; const k = famKey(m.code); if (!k) continue; const t = trustOf(m.code).trust;
       const sure = t === 'likely' || t === 'mixed', ser = seriesOf(k);
       recs.push({src: 'mly', ll, fam: sure ? k : (ser || k), face: sure ? faceKey(k, m.val) : '?' + (ser || k), unsure: !sure, p: f.properties, op: sure ? (t === 'likely' ? 1 : 0.85) : 0.7}); }
     const seen = new Set(), uniq = recs.filter(r => { const id = r.src + (r.p.id ?? r.ll.map(x => x.toFixed(6)).join()); if (seen.has(id)) return false; seen.add(id); return true; });
@@ -219,6 +219,7 @@ document.addEventListener('click', e => { if (!e.target.closest('.search')) $('#
 /* clicks */
 $('#close').onclick = () => { $('#card').hidden = true; if (map.getSource('sel')) map.getSource('sel').setData({type: 'FeatureCollection', features: []}); };
 map.on('click', e => {
+  if (window.dataHit && window.dataHit(e)) return;
   const box = [[e.point.x - 10, e.point.y - 10], [e.point.x + 10, e.point.y + 10]];
   const g = map.getLayer('signs-face') && map.queryRenderedFeatures(box, {layers: ['signs-face', 'signs-halo']})[0];
   if (g) return openCard(RAW.get(g.properties.gid));
@@ -276,7 +277,8 @@ async function mlyPhoto(id) {
   try {
     const d = (await graph(`${id}/detections`, 'fields=image,geometry')).data || []; if (!d.length) throw 0;
     const ims = await Promise.all(d.slice(0, 6).map(x => graph(x.image.id, 'fields=thumb_1024_url,captured_at,width,height').then(i => ({i, g: x.geometry}))));
-    const {i, g} = ims.filter(x => x.i.thumb_1024_url).sort((a, b) => b.i.captured_at - a.i.captured_at)[0];
+    const pick = ims.filter(x => x.i.thumb_1024_url && x.i.captured_at >= SINCE); if (!pick.length) { box.innerHTML = '<div class="msg">No photo of this sign since 2021</div>'; return; }
+    const {i, g} = pick.sort((a, b) => b.i.captured_at - a.i.captured_at)[0];
     const bb = mvtBox(g), iw = 1024, ih = Math.round(1024 * i.height / i.width), W = box.clientWidth || 308, H = 170, pad = 2.2;
     const bw = Math.max(bb[2] - bb[0], 0.01) * iw * pad, bh = Math.max(bb[3] - bb[1], 0.01) * ih * pad;
     const s = Math.min(W / bw, H / bh, 3), cx = (bb[0] + bb[2]) / 2 * iw * s, cy = (bb[1] + bb[3]) / 2 * ih * s;
@@ -287,10 +289,10 @@ async function mlyPhoto(id) {
 async function nearPhoto(lon, lat) {
   const box = $('#ph'); if (!box) return; const r = 0.00025;
   try {
-    const d = (await graph('images', `fields=thumb_1024_url,captured_at&limit=10&bbox=${lon - r},${lat - r},${lon + r},${lat + r}`)).data || [];
+    const d = (await graph('images', `fields=thumb_1024_url,captured_at&limit=10&start_captured_at=${SINCE_ISO}&bbox=${lon - r},${lat - r},${lon + r},${lat + r}`)).data || [];
     const i = d.sort((a, b) => b.captured_at - a.captured_at)[0]; if (!i) throw 0;
     box.innerHTML = `<a href="${esc(i.thumb_1024_url)}" target="_blank" rel="noopener"><img src="${esc(i.thumb_1024_url)}" alt="Nearest street photo"></a><div class="cap">${age(i.captured_at)}Nearest street photo, ${day(i.captured_at)} (not matched to this sign)</div>`;
-  } catch (e) { box.innerHTML = '<div class="msg">No street photo within 25 m</div>'; }
+  } catch (e) { box.innerHTML = '<div class="msg">No street photo within 25 m since 2021</div>'; }
 }
 function mvtBox(b64) {
   const u = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); let ext = 4096; const pts = [];

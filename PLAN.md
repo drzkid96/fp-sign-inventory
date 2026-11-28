@@ -71,3 +71,9 @@ Not used: Google Street View imagery for extraction (its terms forbid creating d
 - `County base` workflow: priority tiles and agency layers (`requests/base.json` or run by hand).
 - `inventory` workflow: a corridor or area inventory with plan sheets (`requests/<area>.json`).
 - Storage: points and lines as map tiles in the repo; photo crops load from Mapillary on click.
+
+## DATA LAYERS (PLATFORM)
+
+The map also carries street data layers beside the sign inventory: traffic volumes, 85th percentile speeds, walk and bike counts, and parking. Each layer is one entry in `data/layers.json`; `pipeline/layers.py` builds it nightly into map tiles and downloads (GeoJSON, CSV, KMZ, GeoPackage, shapefile, DXF in CA State Plane Zone 5). Sources, dates and what was left out: `data.html`. Working rules for Claude sessions: `CLAUDE.md`.
+
+Date limit for all data: January 1, 2021.

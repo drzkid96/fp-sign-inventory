@@ -1,0 +1,45 @@
+name: Data layers
+# Builds every layer in data/layers.json: tiles and summaries are committed to data/layers/,
+# downloads (GeoJSON, CSV, KMZ, GeoPackage, shapefile, DXF) go to the data-latest release.
+on:
+  schedule: [{cron: '17 9 * * *'}]          # nightly, 1:17 am Pacific
+  workflow_dispatch:
+    inputs:
+      layers: {description: 'Layer ids, space separated (blank = all)', required: false, default: ''}
+  push:
+    paths: ['data/layers.json', 'data/sources/**', 'inputs/**', 'pipeline/layers.py', 'pipeline/sources/**', 'pipeline/geo/**']
+permissions:
+  contents: write
+concurrency: {group: layers, cancel-in-progress: false}
+jobs:
+  layers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Tools
+        run: |
+          pip install -q geopandas pyogrio shapely pandas requests pdfplumber
+          if ! command -v tippecanoe; then
+            git clone -q --depth 1 https://github.com/felt/tippecanoe.git /tmp/tc && make -s -C /tmp/tc -j4 && sudo make -s -C /tmp/tc install
+          fi
+      - name: Street map for name matching
+        run: |
+          mkdir -p /tmp/in && cd /tmp/in
+          T=https://www2.census.gov/geo/tiger/TIGER2025
+          curl -sfO $T/ROADS/tl_2025_06037_roads.zip; curl -sfO $T/PLACE/tl_2025_06_place.zip
+      - name: Build layers
+        env: {TIGER_DIR: /tmp/in, OUT: /tmp/layers-out}
+        run: python3 pipeline/layers.py ${{ github.event.inputs.layers }}
+      - name: Publish downloads
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: |
+          gh release view data-latest >/dev/null 2>&1 || gh release create data-latest --title "Data layers (latest)" --notes "Rebuilt nightly from data/layers.json. Layer list, sources and dates: data.html on the site."
+          ls /tmp/layers-out
+          gh release upload data-latest /tmp/layers-out/* --clobber
+      - name: Commit
+        run: |
+          git config user.name "inventory-bot"; git config user.email "actions@users.noreply.github.com"
+          git add -A data/layers && git commit -qm "Data layers rebuilt" && git pull -q --rebase -X theirs && git push -q || echo "nothing to commit"

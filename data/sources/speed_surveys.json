@@ -1,0 +1,10 @@
+{
+  "about": "Engineering and Traffic Survey (E&TS) reports read for 85th percentile speeds. Add a report here (city, year, url) or drop the PDF in inputs/speed-surveys/ named YYYY_City_anything.pdf. Reports dated before 2021 are not used.",
+  "reports": [
+    {"city": "West Hollywood", "year": 2023, "title": "2023 Traffic Speed Zone Survey", "url": "https://weho.org/home/showpublisheddocument/58052/638360696003470000"},
+    {"city": "Manhattan Beach", "year": 2022, "title": "2022 Engineering and Traffic Survey, summary table", "url": "https://www.manhattanbeach.gov/home/showpublisheddocument/53536/638369612250170000"},
+    {"city": "Manhattan Beach", "year": 2022, "title": "2022 Engineering and Traffic Survey, segment sheets", "url": "https://www.manhattanbeach.gov/home/showpublisheddocument/53796/638410776415730000"},
+    {"city": "El Monte", "year": 2022, "title": "2022 Engineering and Traffic Survey", "url": "https://ca-elmonte.civicplus.com/DocumentCenter/View/6322/El-Monte_ETS-Rpt_Final-"},
+    {"city": "South Pasadena", "year": 2025, "title": "2025 Citywide E&TS (Feb 2026 commission packet)", "url": "https://www.southpasadenaca.gov/files/assets/public/v/1/boards-and-commissions/documents/public-works-infrastructure-commission/00-20260211-pwic-agenda-packet.pdf"}
+  ]
+}

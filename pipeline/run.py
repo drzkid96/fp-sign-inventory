@@ -4,6 +4,7 @@ usage: python pipeline/run.py requests/<key>.json
 Steps: street-level photos -> sign boxes -> crops -> trained sign model (ONNX) -> group views into signs
 by crossing sight lines -> street, direction and cross street -> 11x17 plan sheets and site data.
 """
+SINCE = '2021-01-01T00:00:00Z'   # photos older than this are not used
 import json, math, os, sys, io, time, base64, collections, subprocess, datetime
 import numpy as np, cv2, requests
 import concurrent.futures as cf
@@ -60,7 +61,7 @@ def quarter(b):
     mx, my = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
     return [[b[0], b[1], mx, my], [mx, b[1], b[2], my], [b[0], my, mx, b[3]], [mx, my, b[2], b[3]]]
 def cell(bx):
-    r = get('https://graph.mapillary.com/images', access_token=TOKEN, bbox=','.join(f'{v:.6f}' for v in bx), limit=2000,
+    r = get('https://graph.mapillary.com/images', access_token=TOKEN, bbox=','.join(f'{v:.6f}' for v in bx), limit=2000, start_captured_at=SINCE,
             fields='id,captured_at,computed_geometry,computed_compass_angle,is_pano,width,height,camera_parameters,thumb_original_url,thumb_2048_url')
     if r is None: raise SystemExit(f'photo list failed for part of the area {bx}; nothing was written')
     data = [d for d in r.json().get('data', []) if d.get('computed_geometry') and d.get('computed_compass_angle') is not None]
