@@ -121,7 +121,8 @@ def collect(points, since):
             t = requests.get(PAGE.format(tid), headers=H, timeout=60).text
             return tid, sorted(set(re.findall(r'href="([^"]+\.pdf)"', t, re.I)))
         except Exception: return tid, None
-    todo = [p[0] for p in points if str(p[0]) not in cache['pages'] or p[0] % 7 == slice_]
+    fresh = [p[0] for p in points if str(p[0]) not in cache['pages']][:int(os.environ.get('NLA_PAGES', 4000))]   # first build spreads over a few nights
+    todo = fresh + [p[0] for p in points if str(p[0]) in cache['pages'] and p[0] % 7 == slice_]
     with cf.ThreadPoolExecutor(8) as ex:
         for tid, links in ex.map(page, todo):
             if links is not None: cache['pages'][str(tid)] = links
@@ -130,13 +131,13 @@ def collect(points, since):
         for u in cache['pages'].get(str(p[0]), []):
             d = file_date(u)
             if d and d >= since and any(f'/{k}/' in u for k in KIND) and not re.search(r'PED|BIKE', u.rsplit('/', 1)[-1], re.I): want[u] = (p, d)
-    new = [u for u in want if (cache['files'].get(u) or {}).get('v') != PARSER_V]
+    new = [u for u in want if (cache['files'].get(u) or {}).get('v') != PARSER_V][:int(os.environ.get('NLA_FILES', 1500))]
     with cf.ThreadPoolExecutor(8) as ex:
         for u, rec in zip(new, ex.map(read_pdf, new)):
             cache['files'][u] = rec
     json.dump(cache, open(CACHE, 'w'), separators=(',', ':'))
     links = [u for v in cache['pages'].values() for u in v]
-    stats = {'locations': len(points), 'pages_read': len(todo), 'pdf_links': len(links),
+    stats = {'locations': len(points), 'pages_read': len(todo), 'pages_not_yet_read': sum(1 for p in points if str(p[0]) not in cache['pages']), 'pdf_links': len(links),
              'undated_links': sum(1 for u in links if not file_date(u)), 'files_since_limit': len(want), 'new_files_read': len(new),
              'not_read': sum(1 for u in want if 'error' in (cache['files'].get(u) or {'error': 1}))}
     return {u: (want[u][0], want[u][1], cache['files'].get(u) or {}) for u in want}, stats
